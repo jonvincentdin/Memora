@@ -1,2 +1,2 @@
 # Memora
-Memora — an AI-assisted study platform that transforms notes into structured reviewers, quizzes, exams, and interactive study materials.
+A modern study platform for turning notes into structured reviewers, quizzes, exams, and personalized study sessions.
