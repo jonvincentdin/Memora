@@ -1,0 +1,112 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Sparkles, Download, FileText, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
+import { MarkdownRenderer } from "@/components/markdown/renderer";
+import { MarkdownEditor } from "@/components/markdown/editor";
+import { ShareDialog } from "@/components/sharing/share-dialog";
+import { DeleteReviewerButton } from "@/components/reviewers/delete-reviewer-button";
+import { exportMarkdownToPdf } from "@/lib/pdf-export";
+import { formatDate } from "@/lib/utils";
+
+interface ReviewerDetailProps {
+  reviewer: {
+    id: string;
+    title: string;
+    description: string | null;
+    style: string;
+    content: string;
+    updatedAt: string;
+    noteCount: number;
+  };
+  isOwner: boolean;
+}
+
+export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(reviewer.title);
+  const [content, setContent] = useState(reviewer.content);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    const res = await fetch(`/api/reviewers/${reviewer.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setEditing(false);
+      router.refresh();
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <Link href="/reviewers" className="mb-4 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink">
+        <ArrowLeft className="h-4 w-4" /> Back to reviewers
+      </Link>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Badge tone="accent">{reviewer.style}</Badge>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/reviewers/export?id=${reviewer.id}&format=json`}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-ink hover:bg-ink/5"
+          >
+            <Download className="h-3.5 w-3.5" /> JSON
+          </a>
+          <Button variant="outline" size="sm" onClick={() => exportMarkdownToPdf(reviewer.title, content)}>
+            <FileText className="h-3.5 w-3.5" /> PDF
+          </Button>
+          <Link
+            href={`/quizzes?fromReviewer=${reviewer.id}`}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-medium text-ink hover:bg-accent-dark hover:text-white"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Create quiz
+          </Link>
+          {isOwner && !editing && (
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Button>
+          )}
+          {isOwner && <ShareDialog resourceType="REVIEWER" resourceId={reviewer.id} />}
+          {isOwner && <DeleteReviewerButton reviewerId={reviewer.id} />}
+        </div>
+      </div>
+
+      {editing ? (
+        <>
+          <Label htmlFor="reviewer-title">Title</Label>
+          <Input id="reviewer-title" value={title} onChange={(e) => setTitle(e.target.value)} className="mb-4 font-display text-lg" />
+          <Label>Content (Markdown)</Label>
+          <MarkdownEditor value={content} onChange={setContent} />
+          <div className="mt-4 flex items-center justify-between">
+            <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving}>Save changes</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 className="font-display text-2xl text-ink">{reviewer.title}</h1>
+          {reviewer.description && <p className="mt-1 text-ink-soft">{reviewer.description}</p>}
+          <p className="mt-1 text-xs text-ink-faint">
+            Last updated {formatDate(reviewer.updatedAt)}
+            {reviewer.noteCount > 0 && ` · Built from ${reviewer.noteCount} note(s)`}
+          </p>
+
+          <div className="mt-6 border-t border-line pt-6">
+            <MarkdownRenderer content={reviewer.content} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

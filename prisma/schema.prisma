@@ -1,0 +1,290 @@
+// Memora database schema
+// See README.md section "Database Setup" for migration instructions.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  notes         Note[]
+  reviewers     Reviewer[]
+  quizzes       Quiz[]
+  quizAttempts  QuizAttempt[]
+  sharesGiven   ResourceShare[] @relation("SharesGivenByOwner")
+  sharesGranted ResourceShare[] @relation("SharesGrantedToUser")
+  settings      UserSettings?
+  collections   ShareCollection[]
+
+  @@map("users")
+}
+
+model UserSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appearance            Appearance @default(SYSTEM)
+  defaultQuestionCount  Int      @default(10)
+  defaultDifficulty     Difficulty @default(MIXED)
+  defaultQuizMode       QuizMode @default(QUIZ)
+  showExplanations      Boolean  @default(true)
+  autoSave              Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+enum Appearance {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+// ---------------------------------------------------------------------------
+// Notes
+// ---------------------------------------------------------------------------
+model Note {
+  id                String   @id @default(cuid())
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  originalFilename  String?
+  sourceType        NoteSourceType
+  sourceUrl         String?
+  content           Bytes    // gzip-compressed Markdown — see lib/compression.ts / lib/notes-repo.ts
+  fileExtension     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  reviewerLinks     ReviewerNote[]
+
+  @@index([ownerId])
+  @@map("notes")
+}
+
+enum NoteSourceType {
+  PDF
+  MARKDOWN
+  TXT
+  DOCX
+  GOOGLE_DOCS
+  NOTION
+  MANUAL
+}
+
+// ---------------------------------------------------------------------------
+// Reviewers
+// ---------------------------------------------------------------------------
+model Reviewer {
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  style       ReviewerStyle @default(COMPLETE)
+  content     Bytes    // gzip-compressed Markdown — see lib/compression.ts / lib/reviewers-repo.ts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  noteLinks   ReviewerNote[]
+  quizLinks   QuizReviewer[]
+
+  @@index([ownerId])
+  @@map("reviewers")
+}
+
+enum ReviewerStyle {
+  COMPLETE
+  QUICK
+  EXAM
+  CONCEPT
+  DEFINITION
+  COMPARISON
+  CUSTOM
+}
+
+// Explicit join table so a reviewer can cite which source notes built it (noteIds).
+model ReviewerNote {
+  reviewerId String
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  noteId     String
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([reviewerId, noteId])
+  @@map("reviewer_notes")
+}
+
+// ---------------------------------------------------------------------------
+// Quizzes
+// ---------------------------------------------------------------------------
+model Quiz {
+  id            String   @id @default(cuid())
+  ownerId       String
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  mode          QuizMode @default(QUIZ)
+  configuration Json     // question count, difficulty, distribution, randomization, timing, attempts
+  questions     Json     // validated array of Memora quiz question objects
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reviewerLinks QuizReviewer[]
+  attempts      QuizAttempt[]
+
+  @@index([ownerId])
+  @@map("quizzes")
+}
+
+enum QuizMode {
+  QUIZ
+  PRACTICE_EXAM
+  MOCK_EXAM
+  TIMED_EXAM
+  MASTERY_TEST
+}
+
+enum Difficulty {
+  EASY
+  NORMAL
+  HARD
+  MIXED
+}
+
+model QuizReviewer {
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  reviewerId String
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, reviewerId])
+  @@map("quiz_reviewers")
+}
+
+model QuizAttempt {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId        String
+  quiz          Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score         Int
+  totalQuestions Int
+  answers       Json      // per-question answers, correctness, flags
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Sharing / permissions
+// ---------------------------------------------------------------------------
+enum ResourceType {
+  NOTE
+  REVIEWER
+  QUIZ
+}
+
+enum Permission {
+  VIEW
+  EDIT
+  OWNER
+}
+
+// A single row per (resource, grantee). resourceId points at a Note, Reviewer, or
+// Quiz id depending on resourceType. Prisma has no native polymorphic relation, so
+// resourceId is a plain string and referential integrity for it is enforced in
+// application code (see lib/permissions) rather than a DB-level foreign key.
+// Cascade cleanup when a resource is deleted is handled explicitly in
+// lib/permissions/index.ts (deleteSharesForResource), not by the database.
+model ResourceShare {
+  id           String       @id @default(cuid())
+  resourceId   String
+  resourceType ResourceType
+  ownerId      String
+  owner        User         @relation("SharesGivenByOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User         @relation("SharesGrantedToUser", fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission   @default(VIEW)
+  createdAt    DateTime     @default(now())
+
+  @@unique([resourceId, resourceType, userId])
+  @@index([userId])
+  @@index([resourceId, resourceType])
+  @@map("resource_shares")
+}
+
+// ---------------------------------------------------------------------------
+// Public collections — an owner picks a set of notes/reviewers/quizzes and
+// publishes them at a single public, read-only URL (/c/[slug]). No account
+// is required to view a collection or leave feedback on it.
+// ---------------------------------------------------------------------------
+model ShareCollection {
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  slug        String   @unique
+  title       String
+  description String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items    ShareCollectionItem[]
+  feedback ShareFeedback[]
+
+  @@index([ownerId])
+  @@map("share_collections")
+}
+
+// A resource (note/reviewer/quiz) included in a collection. resourceId is a
+// plain string for the same polymorphic-relation reason as ResourceShare
+// above — see lib/permissions/index.ts.
+model ShareCollectionItem {
+  id           String          @id @default(cuid())
+  collectionId String
+  collection   ShareCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  resourceType ResourceType
+  resourceId   String
+  position     Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  @@unique([collectionId, resourceType, resourceId])
+  @@index([collectionId])
+  @@map("share_collection_items")
+}
+
+// Feedback left by anonymous visitors of a published collection. Optionally
+// scoped to a single item within the collection (e.g. a comment on one
+// specific note) or left general (resourceId null) for the collection as a whole.
+model ShareFeedback {
+  id           String          @id @default(cuid())
+  collectionId String
+  collection   ShareCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  resourceType ResourceType?
+  resourceId   String?
+  authorName   String?
+  message      String
+  createdAt    DateTime        @default(now())
+
+  @@index([collectionId])
+  @@map("share_feedback")
+}

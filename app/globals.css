@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-paper: 250 250 247;
+  --color-ink: 27 31 59;
+  --color-ink-soft: 74 79 106;
+  --color-ink-faint: 138 143 168;
+  --color-accent: 232 163 61;
+  --color-accent-soft: 252 234 203;
+  --color-accent-dark: 193 128 30;
+  --color-line: 228 225 216;
+  --color-surface: 255 255 255;
+  --color-success: 46 125 91;
+  --color-danger: 196 67 61;
+}
+
+/* Applied to <html> by the theme provider (components/layout/theme-provider.tsx).
+   Also set from an inline script in app/layout.tsx before hydration so there
+   is no flash of the wrong theme on load — this works for signed-out
+   visitors too, since it only ever reads localStorage, never the account. */
+.dark {
+  --color-paper: 18 20 31;
+  --color-ink: 236 237 245;
+  --color-ink-soft: 183 186 209;
+  --color-ink-faint: 124 127 153;
+  --color-accent: 232 163 61;
+  --color-accent-soft: 58 44 20;
+  --color-accent-dark: 240 180 99;
+  --color-line: 42 46 66;
+  --color-surface: 26 29 43;
+  --color-success: 76 175 131;
+  --color-danger: 226 104 95;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper rounded-sm;
+  }
+
+  ::selection {
+    @apply bg-accent-soft text-ink;
+  }
+}
+
+@layer components {
+  /* Signature "highlighter" underline used sparingly for emphasis in copy */
+  .highlight-mark {
+    background-image: linear-gradient(transparent 62%, theme("colors.accent.soft") 62%);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+  }
+
+  .card {
+    @apply bg-surface border border-line rounded-card shadow-card;
+  }
+
+  /* Typography for rendered Markdown (notes + reviewers) */
+  .memora-markdown {
+    @apply text-ink leading-relaxed;
+  }
+  .memora-markdown > *:first-child {
+    @apply mt-0;
+  }
+  .memora-markdown h1 {
+    @apply font-display text-3xl font-medium text-ink mt-8 mb-4 pb-2 border-b border-line;
+  }
+  .memora-markdown h2 {
+    @apply font-display text-2xl font-medium text-ink mt-8 mb-3;
+  }
+  .memora-markdown h3 {
+    @apply font-display text-xl font-medium text-ink mt-6 mb-2;
+  }
+  .memora-markdown h4 {
+    @apply font-display text-lg font-medium text-ink mt-5 mb-2;
+  }
+  .memora-markdown p {
+    @apply my-3 leading-relaxed;
+  }
+  .memora-markdown strong {
+    @apply font-semibold text-ink;
+  }
+  .memora-markdown em {
+    @apply italic;
+  }
+  .memora-markdown ul {
+    @apply my-3 list-disc pl-6 space-y-1;
+  }
+  .memora-markdown ol {
+    @apply my-3 list-decimal pl-6 space-y-1;
+  }
+  .memora-markdown li > ul,
+  .memora-markdown li > ol {
+    @apply my-1;
+  }
+  .memora-markdown a {
+    @apply text-accent-dark underline underline-offset-2 hover:text-ink;
+  }
+  .memora-markdown blockquote {
+    @apply my-4 rounded-r-lg border-l-4 border-accent bg-accent-soft/40 px-4 py-2.5 text-ink-soft italic;
+  }
+  .memora-markdown blockquote p {
+    @apply my-0;
+  }
+  .memora-markdown code {
+    @apply rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[0.85em] text-ink;
+  }
+  .memora-markdown pre {
+    @apply my-4 overflow-x-auto rounded-lg bg-[#1B1F3B] p-4;
+  }
+  .memora-markdown pre code {
+    @apply bg-transparent px-0 py-0 text-white;
+  }
+  .memora-markdown hr {
+    @apply my-6 border-line;
+  }
+  .memora-markdown table {
+    @apply my-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
+  }
+  .memora-markdown thead {
+    @apply bg-ink/5;
+  }
+  .memora-markdown th {
+    @apply border border-line px-3 py-2 text-left font-medium text-ink;
+  }
+  .memora-markdown td {
+    @apply border border-line px-3 py-2 text-ink-soft align-top;
+  }
+  .memora-markdown tbody tr:nth-child(even) {
+    @apply bg-ink/[0.02];
+  }
+  .memora-markdown img {
+    @apply my-4 rounded-lg border border-line;
+  }
+}

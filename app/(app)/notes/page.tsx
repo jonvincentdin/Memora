@@ -1,0 +1,61 @@
+import Link from "next/link";
+import { FileText, Plus } from "lucide-react";
+import { requireUser } from "@/lib/auth/session";
+import { findNotesByOwner } from "@/lib/notes-repo";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { formatRelativeTime } from "@/lib/utils";
+
+const sourceLabels: Record<string, string> = {
+  PDF: "PDF",
+  MARKDOWN: "Markdown",
+  TXT: "Text file",
+  GOOGLE_DOCS: "Google Docs",
+  NOTION: "Notion",
+  MANUAL: "Manual",
+};
+
+export default async function NotesPage() {
+  const user = await requireUser();
+  const notes = await findNotesByOwner(user.id);
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Notes</h1>
+          <p className="mt-1 text-sm text-ink-soft">Everything you&apos;ve imported, in one library.</p>
+        </div>
+        <Link
+          href="/notes/import"
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-ink/90"
+        >
+          <Plus className="h-4 w-4" /> Import note
+        </Link>
+      </div>
+
+      {notes.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Your study library is empty."
+          description="Import your first note to get started."
+          actionLabel="Import your first note"
+          actionHref="/notes/import"
+        />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {notes.map((note) => (
+            <Link key={note.id} href={`/notes/${note.id}`} className="card p-4 hover:shadow-card-hover">
+              <div className="mb-2 flex items-center justify-between">
+                <Badge tone="neutral">{sourceLabels[note.sourceType] ?? note.sourceType}</Badge>
+                <span className="text-xs text-ink-faint">{formatRelativeTime(note.updatedAt)}</span>
+              </div>
+              <p className="font-display text-base text-ink line-clamp-1">{note.title}</p>
+              <p className="mt-1 text-sm text-ink-soft line-clamp-2">{note.content.slice(0, 140)}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,2 +1,123 @@
 # Memora
-A modern study platform for turning notes into structured reviewers, quizzes, exams, and personalized study sessions.
+
+A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 14, TypeScript, Prisma, and NextAuth.
+
+Memora never calls an AI API on its own behalf. Instead, it generates ready-to-use prompts from your notes; you paste them into Claude (or any AI assistant you already use) and bring the structured result back in. You review and validate everything before it's saved.
+
+## Stack
+
+- **Framework:** Next.js 14 (App Router) + TypeScript
+- **Styling:** Tailwind CSS with a custom design system (`tailwind.config.ts`)
+- **Database:** PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
+- **Auth:** NextAuth.js (credentials/email+password by default; Google OAuth scaffolded but disabled)
+- **Content:** Notes and reviewers are Markdown, **gzip-compressed at rest** (see Storage below), rendered with `react-markdown` + `remark-gfm`
+- **Validation:** Zod schemas shared between client and server (`lib/validation/`)
+- **PDF export:** client-side, rendering the app's real HTML/fonts via `jspdf` + `html2canvas` — no server round trip, works for guest mode too
+
+## Getting started
+
+```bash
+npm install
+cp .env.example .env      # then fill in DATABASE_URL and AUTH_SECRET
+npx prisma migrate dev    # creates tables from prisma/schema.prisma
+npm run dev
+```
+
+Generate `AUTH_SECRET` with `openssl rand -base64 32`.
+
+**Do you need to run `prisma migrate dev` every time?** No — only when `prisma/schema.prisma` itself changes (adding/renaming a field, changing a type, etc.). Normal day-to-day use (creating notes, editing reviewers, taking quizzes) is just regular database reads/writes through Prisma Client and never touches migrations. This particular version of the schema *did* change (Note/Reviewer content moved from `String` to compressed `Bytes`), so if you're upgrading from an earlier copy of this project, run the migration once to apply it — after that you're done until the schema changes again.
+
+`npm install` runs `prisma generate` automatically (via `postinstall`). If you're behind a restrictive network/proxy and it fails to fetch Prisma's query-engine binary, run `npx prisma generate` again once you have access to `binaries.prisma.sh`.
+
+## Project structure
+
+```
+app/
+  (app)/            # authenticated routes, wrapped by a shared sidebar/topbar layout
+    dashboard/  notes/  reviewers/  quizzes/  study/  shared/  settings/
+  guest/            # unauthenticated "quick mode" — no login, nothing saved
+  api/               # route handlers — every one re-checks auth + ownership/sharing
+    guest/           # public, stateless endpoints (prompt generation, file extraction)
+  login/ register/   # public auth pages
+  page.tsx           # marketing landing page
+components/
+  markdown/          shared MarkdownEditor (toolbar + preview + formatting guide) and MarkdownRenderer
+  guest/             guest-mode reviewer/quiz flows
+  notes/ reviewers/ quizzes/ study/ sharing/ ui/ layout/
+lib/
+  auth/              NextAuth config + server session helpers
+  db/                Prisma client singleton
+  notes-repo.ts / reviewers-repo.ts   the ONLY places allowed to touch the compressed content column — see Storage below
+  compression.ts     gzip helpers used by the two repos above
+  permissions/       central ownership/share access-control checks
+  validation/        Zod schemas (auth, notes, reviewers, quizzes)
+  imports/           TXT/MD/PDF/JSON parsing, Google Docs/Notion link handling
+  exports/           JSON export builders
+  markdown-frontmatter.ts   lossless title/description round-trip for exported .md files
+  prompts/           builds the "prepare notes" and "generate quiz" AI prompts
+  pdf-export.tsx     client-side PDF rendering (real HTML/fonts via html2canvas)
+  quiz-grading.ts     shared grading logic (used by both saved attempts and guest mode)
+  rate-limit.ts / guest-rate-limit.ts   best-effort in-memory throttling (see Security below)
+prisma/schema.prisma
+```
+
+## Storage: compressed content
+
+`Note.content` and `Reviewer.content` — the two fields that can realistically grow large (pasted or AI-generated study material) — are stored as gzip-compressed `Bytes` in Postgres rather than plain `text`. Plain-language Markdown routinely compresses 60-80%, which matters once you have many users each with their own note/reviewer library.
+
+This is deliberately **not** implicit ORM magic: `lib/notes-repo.ts` and `lib/reviewers-repo.ts` are the only files that call `prisma.note`/`prisma.reviewer` when `content` is involved. Every API route and page goes through `createNote`/`updateNote`/`findNoteById`/`findNotesByOwner` (and the Reviewer equivalents), which handle compress-on-write and decompress-on-read and hand back a plain `string` — nothing else in the app needs to know the column is compressed. Reads that only need metadata (titles, dates, for list views) use a `select` that excludes `content` entirely and skip Prisma directly, since there's nothing to decompress.
+
+## How the AI-assisted workflow works
+
+1. **Import** — upload a `.md`/`.txt`/`.pdf` file (or a Memora `.json` export, see Round-trip below), or paste content exported from Google Docs/Notion.
+2. **Generate a prompt** — select notes, pick a processing style, and Memora builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memora renders it with full typography.
+3. **Run it in Claude** — copy the prompt into Claude (or another AI assistant) yourself.
+4. **Import the result** — paste the response back into Memora. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
+5. **Study** — turn the result into flashcards, quizzes, and exams, and track attempts over time.
+
+## Round-trip fidelity (export → re-import)
+
+Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so re-importing recovers the exact original title/description instead of guessing from the filename. Exported `.json` files (`memora-note-export` / `memora-reviewer-export`) can be re-imported directly through the same "Upload File" flow — anything else named `.json` is rejected with a clear message rather than silently imported. JSON exports are compact (no pretty-print whitespace) to keep file size down.
+
+## PDF export
+
+PDF export renders the *same* HTML the app already shows on screen — the real `MarkdownRenderer` output, the app's actual fonts (Fraunces/Inter) and `.memora-markdown` styling — into an off-screen container, then rasterizes it with `html2canvas` via `jsPDF`'s `.html()` method. This replaced an earlier version that hand-parsed Markdown line-by-line and positioned text manually with jsPDF's low-level text API, which had two real bugs worth noting if you're comparing against an older copy: it stripped markdown syntax to plain text instead of applying real bold/italic styling, and jsPDF's built-in Helvetica font mis-measured certain punctuation, producing visibly spaced-out text. Rendering real HTML sidesteps both.
+
+## Guest / quick mode (`/guest`)
+
+No account, nothing saved. You get a ready-made prompt (optionally embedding notes you paste or upload), copy it into Claude, and paste the result back in to preview, take the quiz in-browser, and export — all client-side except the stateless prompt-generation and PDF-text-extraction endpoints under `/api/guest/*`, none of which touch the database or require a session.
+
+## Data model
+
+See `prisma/schema.prisma` for the full schema. Highlights:
+
+- `User` / `UserSettings` — auth + per-user preferences.
+- `Note` / `Reviewer` — both store `content` as compressed Markdown (see Storage above). `ReviewerNote` is an explicit join table recording which notes a reviewer was built from.
+- `Quiz` / `QuizAttempt` — a quiz's questions and configuration (JSON, since grading needs structured data), plus every graded attempt a user makes.
+- `ResourceShare` — a polymorphic-by-convention sharing table (`resourceType` + `resourceId`) granting `VIEW` or `EDIT` access to another user. Prisma has no native polymorphic relations, so referential integrity for `resourceId` is enforced in `lib/permissions`, not a DB foreign key.
+
+Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel` — ownership and shares are never trusted from the client.
+
+## Security notes
+
+- Passwords hashed with bcrypt (cost factor 12).
+- Login errors are deliberately generic ("Invalid email or password") and always run `bcrypt.compare` — even against a dummy hash when the email doesn't exist — so response timing doesn't leak which emails are registered.
+- Best-effort in-memory rate limiting on login (per email) and registration (per IP): see `lib/rate-limit.ts`. This is a real limitation, not full protection — it resets on cold start and doesn't coordinate across serverless instances. Swap in Upstash Redis / Vercel KV before relying on this in production.
+- Guest endpoints (`/api/guest/*`) have their own rate limit and a hard content-size cap, since they're unauthenticated.
+- Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) are set globally in `next.config.mjs`.
+- Markdown is rendered via `react-markdown` **without** the `rehype-raw` plugin, so raw HTML in note/reviewer content (whether typed by a user or returned by an AI) is displayed as literal text rather than executed — this is what keeps rendering safe without a separate sanitization pass.
+- File uploads are capped by size, restricted to `.md`/`.txt`/`.pdf`/Memora's own `.json` exports by extension, and PDFs are additionally verified by magic-byte sniffing rather than trusting the extension alone.
+
+## What's implemented vs. what's marked TODO
+
+**Implemented:** auth, notes CRUD + MD/PDF/TXT/JSON import + JSON/MD/PDF export with lossless round-trip, a full Markdown editor (toolbar, live preview, in-editor formatting guide) shared by notes and reviewers, the reviewer generation workflow, the quiz generation workflow with 7 question types, an interactive quiz player with auto-grading and a timer, results/review screens, flashcards extracted from reviewer Markdown, guest/quick mode, sharing with view/edit permissions, a settings page, global search, and compressed at-rest storage for note/reviewer content.
+
+**Marked as TODO in code** rather than faked:
+- Direct Google Docs / Notion API import (`lib/imports/link-import.ts`) — falls back to asking the user to paste exported content, since real integration requires OAuth credentials this template doesn't assume you have.
+- Mastery-mode adaptive practice / spaced repetition scheduling (`app/(app)/study/page.tsx`).
+- Dark theme wiring — tokens exist in `tailwind.config.ts` (`colors.dark.*`) but there's no theme toggle/provider yet.
+- Durable, distributed rate limiting (currently best-effort in-memory — see Security above).
+
+## Design system
+
+Custom palette and type system in `tailwind.config.ts` and `app/globals.css` — ink-navy primary, amber "highlighter" accent, Fraunces (display serif) + Inter (body) + IBM Plex Mono. Rendered Markdown gets its own typography pass (`.memora-markdown` in `globals.css`) so notes and reviewers look like a designed document, not a raw text dump — and PDF exports inherit the exact same styling.

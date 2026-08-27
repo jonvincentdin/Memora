@@ -1,0 +1,115 @@
+import { prisma } from "@/lib/db";
+import type { Permission, ResourceType } from "@prisma/client";
+
+/**
+ * Every protected resource (Note, Reviewer, Quiz) must pass through one of
+ * these helpers before a request is allowed to read or mutate it. Never
+ * trust that an id in a URL or request body belongs to the caller — this is
+ * the single place that answers "is this user allowed to do this".
+ */
+
+const ownerLookup: Record<ResourceType, (id: string) => Promise<{ ownerId: string } | null>> = {
+  NOTE: (id) => prisma.note.findUnique({ where: { id }, select: { ownerId: true } }),
+  REVIEWER: (id) => prisma.reviewer.findUnique({ where: { id }, select: { ownerId: true } }),
+  QUIZ: (id) => prisma.quiz.findUnique({ where: { id }, select: { ownerId: true } }),
+};
+
+export type AccessLevel = "OWNER" | "EDIT" | "VIEW" | "NONE";
+
+/**
+ * Resolves the effective access level a user has on a resource: direct
+ * ownership beats an explicit share, and no row/share means no access.
+ * Deleted or missing resources also resolve to "NONE" so callers can return
+ * a uniform 404 instead of leaking existence.
+ */
+export async function getAccessLevel(
+  userId: string,
+  resourceType: ResourceType,
+  resourceId: string
+): Promise<AccessLevel> {
+  const resource = await ownerLookup[resourceType](resourceId);
+  if (!resource) return "NONE";
+  if (resource.ownerId === userId) return "OWNER";
+
+  const share = await prisma.resourceShare.findUnique({
+    where: {
+      resourceId_resourceType_userId: { resourceId, resourceType, userId },
+    },
+    select: { permission: true },
+  });
+
+  if (!share) return "NONE";
+  return share.permission === "EDIT" ? "EDIT" : "VIEW";
+}
+
+export async function canView(userId: string, resourceType: ResourceType, resourceId: string) {
+  const level = await getAccessLevel(userId, resourceType, resourceId);
+  return level !== "NONE";
+}
+
+export async function canEdit(userId: string, resourceType: ResourceType, resourceId: string) {
+  const level = await getAccessLevel(userId, resourceType, resourceId);
+  return level === "OWNER" || level === "EDIT";
+}
+
+export async function isOwner(userId: string, resourceType: ResourceType, resourceId: string) {
+  const level = await getAccessLevel(userId, resourceType, resourceId);
+  return level === "OWNER";
+}
+
+/** Removes all share rows for a resource. Call this before/with resource deletion. */
+export async function deleteSharesForResource(resourceType: ResourceType, resourceId: string) {
+  await prisma.resourceShare.deleteMany({ where: { resourceType, resourceId } });
+}
+
+export async function shareResource(params: {
+  ownerId: string;
+  resourceType: ResourceType;
+  resourceId: string;
+  granteeEmail: string;
+  permission: Permission;
+}) {
+  const owns = await isOwner(params.ownerId, params.resourceType, params.resourceId);
+  if (!owns) {
+    throw new Error("Only the owner can share this resource.");
+  }
+
+  const grantee = await prisma.user.findUnique({ where: { email: params.granteeEmail.toLowerCase().trim() } });
+  if (!grantee) {
+    throw new Error("No Memora user found with that email.");
+  }
+  if (grantee.id === params.ownerId) {
+    throw new Error("You already own this resource.");
+  }
+
+  return prisma.resourceShare.upsert({
+    where: {
+      resourceId_resourceType_userId: {
+        resourceId: params.resourceId,
+        resourceType: params.resourceType,
+        userId: grantee.id,
+      },
+    },
+    update: { permission: params.permission },
+    create: {
+      resourceId: params.resourceId,
+      resourceType: params.resourceType,
+      ownerId: params.ownerId,
+      userId: grantee.id,
+      permission: params.permission,
+    },
+  });
+}
+
+export async function revokeShare(params: {
+  ownerId: string;
+  resourceType: ResourceType;
+  resourceId: string;
+  shareId: string;
+}) {
+  const owns = await isOwner(params.ownerId, params.resourceType, params.resourceId);
+  if (!owns) {
+    throw new Error("Only the owner can revoke access.");
+  }
+  await prisma.resourceShare.delete({ where: { id: params.shareId } });
+}
