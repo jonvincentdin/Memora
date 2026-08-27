@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserOrNull } from "@/lib/auth/session";
-import { importNotionPage, NotionImportError, isNotionConfigured } from "@/lib/imports/notion-import";
+import { importNotionPage, NotionImportError } from "@/lib/imports/notion-import";
+import { getAccessToken } from "@/lib/integrations/repository";
 import { createNote } from "@/lib/notes-repo";
 import { withApiErrorHandling } from "@/lib/api/handler";
 
@@ -11,12 +12,8 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!isNotionConfigured()) {
-    return NextResponse.json(
-      { error: "Notion import isn't set up on this server yet. Ask the site owner to configure NOTION_API_KEY." },
-      { status: 503 }
-    );
-  }
+  const accessToken = await getAccessToken(user.id, "notion");
+  if (!accessToken) return NextResponse.json({ error: "Connect your Notion account in Settings first." }, { status: 409 });
 
   const body = await request.json().catch(() => null);
   const url = typeof body?.url === "string" ? body.url.trim() : "";
@@ -25,7 +22,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   }
 
   try {
-    const { title, content, hasImages } = await importNotionPage(url);
+    const { title, content, hasImages } = await importNotionPage(url, accessToken);
     const note = await createNote({
       ownerId: user.id,
       title,

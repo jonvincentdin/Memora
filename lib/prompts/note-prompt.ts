@@ -52,6 +52,7 @@ RULES
 - Do not remove information that is clearly important, even if it seems minor.
 - If something in the source is unclear, illegible, or ambiguous, mark it as [UNCLEAR: ...] instead of guessing or inventing a replacement.
 - Organize the content into logical topics using headings and subheadings.
+- Make flashcard material machine-readable: write key definitions as "**Term**: definition" or place them in a two-column Term | Definition table. This lets Memora create flashcards automatically.
 
 FORMATTING GUIDE — use standard GitHub-flavored Markdown:
 - "# Title" for the reviewer's main title (use exactly one).

@@ -11,28 +11,22 @@
  *  2. We only accept URLs shaped like a Notion page link
  *     (app.notion.com/p/…, notion.so/…, or a *.notion.site page) and reject
  *     everything else with a clear error.
- *  3. The only network call this makes is to Notion's own official REST API
+ *  3. The only network call this makes is to Notion's official REST API
  *     (api.notion.com), for that one page ID — never a workspace search,
  *     never a recursive crawl of sub-pages/databases. If that page hasn't
- *     been explicitly shared with the configured Notion integration inside
+ *     been explicitly shared with the signed-in user's connection inside
  *     Notion itself, the API call fails — Notion's own sharing model is the
  *     second, independent guarantee that this can only ever reach a page
  *     the person chose to expose, not their whole workspace.
  *
- * Setup required: create an internal integration at
- * https://www.notion.so/my-integrations, put its secret in NOTION_API_KEY,
- * then in Notion open the page → ••• → "Connections" → add that
- * integration. Only pages shared this way are importable.
+ * The access token comes from that user's OAuth connection and is never
+ * shared with another Memora account.
  */
 
-const NOTION_API_VERSION = "2022-06-28";
+const NOTION_API_VERSION = "2026-03-11";
 const NOTION_API_BASE = "https://api.notion.com/v1";
 
 export class NotionImportError extends Error {}
-
-export function isNotionConfigured(): boolean {
-  return Boolean(process.env.NOTION_API_KEY);
-}
 
 /**
  * Accepts only Notion page URLs:
@@ -106,18 +100,14 @@ interface NotionBlock {
   [key: string]: unknown;
 }
 
-async function notionFetch(path: string): Promise<any> {
-  const apiKey = process.env.NOTION_API_KEY;
-  if (!apiKey) {
-    throw new NotionImportError(
-      "Notion import isn't configured on this server yet (missing NOTION_API_KEY). See .env.example."
-    );
-  }
-
+export async function notionFetch(path: string, accessToken: string, init?: RequestInit): Promise<any> {
   const res = await fetch(`${NOTION_API_BASE}${path}`, {
+    ...init,
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      ...init?.headers,
+      Authorization: `Bearer ${accessToken}`,
       "Notion-Version": NOTION_API_VERSION,
+      "Content-Type": "application/json",
     },
     cache: "no-store",
   });
@@ -128,7 +118,7 @@ async function notionFetch(path: string): Promise<any> {
     );
   }
   if (res.status === 401 || res.status === 403) {
-    throw new NotionImportError("Notion rejected the request — the server's Notion integration token may be invalid.");
+    throw new NotionImportError("Notion rejected the request. Reconnect your Notion account in Settings.");
   }
   if (!res.ok) {
     throw new NotionImportError(`Notion API returned an error (status ${res.status}). Please try again.`);
@@ -137,7 +127,7 @@ async function notionFetch(path: string): Promise<any> {
 }
 
 /** Converts a single page's blocks to Markdown. Does not recurse into child pages/databases — only this one page's own content. */
-async function blocksToMarkdown(blockId: string, depth = 0): Promise<string> {
+async function blocksToMarkdown(blockId: string, accessToken: string, depth = 0): Promise<string> {
   if (depth > 4) return ""; // guard against pathological nesting
 
   const lines: string[] = [];
@@ -145,7 +135,7 @@ async function blocksToMarkdown(blockId: string, depth = 0): Promise<string> {
 
   do {
     const query = cursor ? `?start_cursor=${encodeURIComponent(cursor)}&page_size=100` : "?page_size=100";
-    const data = await notionFetch(`/blocks/${blockId}/children${query}`);
+    const data = await notionFetch(`/blocks/${blockId}/children${query}`, accessToken);
     const blocks: NotionBlock[] = data.results ?? [];
 
     for (const block of blocks) {
@@ -209,7 +199,7 @@ async function blocksToMarkdown(blockId: string, depth = 0): Promise<string> {
       }
 
       if (block.has_children && t !== "child_page") {
-        const nested = await blocksToMarkdown(block.id, depth + 1);
+        const nested = await blocksToMarkdown(block.id, accessToken, depth + 1);
         if (nested) lines.push(nested);
       }
     }
@@ -227,16 +217,16 @@ export interface NotionImportResult {
 }
 
 /** Imports exactly one Notion page (never more) given its public URL. */
-export async function importNotionPage(rawUrl: string): Promise<NotionImportResult> {
+export async function importNotionPage(rawUrl: string, accessToken: string): Promise<NotionImportResult> {
   const pageId = extractNotionPageId(rawUrl);
 
-  const page = await notionFetch(`/pages/${pageId}`);
+  const page = await notionFetch(`/pages/${pageId}`, accessToken);
   const titleProp = Object.values(page.properties ?? {}).find((p: any) => p?.type === "title") as
     | { title: NotionRichText[] }
     | undefined;
   const title = richTextToMarkdown(titleProp?.title) || "Untitled Notion page";
 
-  const content = await blocksToMarkdown(pageId);
+  const content = await blocksToMarkdown(pageId, accessToken);
   if (!content.trim()) {
     throw new NotionImportError("That Notion page doesn't have any text content to import.");
   }

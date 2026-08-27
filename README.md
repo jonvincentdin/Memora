@@ -9,10 +9,10 @@ Memora never calls an AI API on its own behalf. Instead, it generates ready-to-u
 - **Framework:** Next.js 15 (App Router) + TypeScript
 - **Styling:** Tailwind CSS with a custom design system (`tailwind.config.ts`)
 - **Database:** PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
-- **Auth:** NextAuth.js (credentials/email+password by default; Google OAuth scaffolded but disabled)
+- **Auth:** NextAuth.js credentials plus per-user Google Drive and Notion OAuth connections
 - **Content:** Notes and reviewers are Markdown, **gzip-compressed at rest** (see Storage below), rendered with `react-markdown` + `remark-gfm`
 - **Validation:** Zod schemas shared between client and server (`lib/validation/`)
-- **PDF export:** client-side, rendering the app's real HTML/fonts via `jspdf` + `html2canvas` — no server round trip, works for guest mode too
+- **PDF export:** client-side, print-first rendering through `jsPDF` — no server round trip, works for guest mode too
 
 ## Getting started
 
@@ -55,11 +55,12 @@ lib/
   compression.ts     gzip helpers used by the two repos above
   permissions/       central ownership/share access-control checks
   validation/        Zod schemas (auth, notes, reviewers, quizzes)
-  imports/           TXT/MD/PDF/JSON parsing, Google Docs/Notion link handling
+  imports/           TXT/MD/PDF/JSON parsing and user-scoped Google Docs/Notion imports
+  integrations/      token encryption, OAuth state signing, and connection repository
   exports/           JSON export builders
   markdown-frontmatter.ts   lossless title/description round-trip for exported .md files
   prompts/           builds the "prepare notes" and "generate quiz" AI prompts
-  pdf-export.tsx     client-side PDF rendering (real HTML/fonts via html2canvas)
+  pdf-export.ts      client-side Markdown and print-first quiz/exam PDF rendering
   quiz-grading.ts     shared grading logic (used by both saved attempts and guest mode)
   rate-limit.ts / guest-rate-limit.ts   durable database-backed throttling (see Security below)
 prisma/schema.prisma
@@ -73,7 +74,7 @@ This is deliberately **not** implicit ORM magic: `lib/notes-repo.ts` and `lib/re
 
 ## How the AI-assisted workflow works
 
-1. **Import** — upload a `.md`/`.txt`/`.pdf` file (or a Memora `.json` export, see Round-trip below), or paste content exported from Google Docs/Notion.
+1. **Import** — upload a `.md`/`.txt`/`.pdf` file (or a Memora `.json` export, see Round-trip below), paste content, or connect your own Google Drive/Notion workspace and choose a document.
 2. **Generate a prompt** — select notes, pick a processing style, and Memora builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memora renders it with full typography.
 3. **Run it in Claude** — copy the prompt into Claude (or another AI assistant) yourself.
 4. **Import the result** — paste the response back into Memora. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
@@ -85,17 +86,18 @@ Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so 
 
 ## PDF export
 
-PDF export renders the *same* HTML the app already shows on screen — the real `MarkdownRenderer` output, the app's actual fonts (Fraunces/Inter) and `.memora-markdown` styling — into an off-screen container, then rasterizes it with `html2canvas` via `jsPDF`'s `.html()` method. This replaced an earlier version that hand-parsed Markdown line-by-line and positioned text manually with jsPDF's low-level text API, which had two real bugs worth noting if you're comparing against an older copy: it stripped markdown syntax to plain text instead of applying real bold/italic styling, and jsPDF's built-in Helvetica font mis-measured certain punctuation, producing visibly spaced-out text. Rendering real HTML sidesteps both.
+Quiz and exam PDFs use an explicit white-page, dark-text template that is independent of the app theme. Every document contains a Memora/title/metadata header, numbered questions and response options, followed by an answer key with the correct answer and detailed explanation for every question. Drawing text directly with `jsPDF` avoids browser CSS and canvas visibility bugs that can produce blank exports. Reviewer/Markdown exports use a lightweight structural renderer for headings, paragraphs, lists, callouts, and tables.
 
 ## Guest / quick mode (`/guest`)
 
-No account, nothing saved. You get a ready-made prompt (optionally embedding notes you paste or upload), copy it into Claude, and paste the result back in to preview, take the quiz in-browser, and export — all client-side except the stateless prompt-generation and PDF-text-extraction endpoints under `/api/guest/*`, none of which touch the database or require a session.
+No account, nothing saved. Guests can create reviewers, flashcards, quizzes, and exams; generate an AI prompt or import quiz JSON directly; and choose Review mode (instant per-question feedback) or Exam mode (feedback after submission). Reviewer output automatically exposes flashcards. Everything stays client-side except the stateless prompt-generation and file-text-extraction endpoints under `/api/guest/*`.
 
 ## Data model
 
 See `prisma/schema.prisma` for the full schema. Highlights:
 
 - `User` / `UserSettings` — auth + per-user preferences.
+- `IntegrationConnection` — encrypted, user-owned Google/Notion OAuth tokens and non-secret account metadata.
 - `Note` / `Reviewer` — both store `content` as compressed Markdown (see Storage above). `ReviewerNote` is an explicit join table recording which notes a reviewer was built from.
 - `Quiz` / `QuizAttempt` — a quiz's questions and configuration (JSON, since grading needs structured data), plus every graded attempt a user makes.
 - `ResourceShare` — a polymorphic-by-convention sharing table (`resourceType` + `resourceId`) granting `VIEW` or `EDIT` access to another user. Prisma has no native polymorphic relations, so referential integrity for `resourceId` is enforced in `lib/permissions`, not a DB foreign key.
@@ -111,13 +113,13 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 - Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) are set globally in `next.config.mjs`.
 - Markdown is rendered via `react-markdown` **without** the `rehype-raw` plugin, so raw HTML in note/reviewer content (whether typed by a user or returned by an AI) is displayed as literal text rather than executed — this is what keeps rendering safe without a separate sanitization pass.
 - File uploads are capped by size, restricted to `.md`/`.txt`/`.pdf`/Memora's own `.json` exports by extension, and PDFs are additionally verified by magic-byte sniffing rather than trusting the extension alone.
+- Google/Notion OAuth state is short-lived and HMAC-signed; provider tokens are AES-256-GCM encrypted at rest and looked up by user + provider so credentials cannot be shared across accounts.
 
 ## What's implemented vs. what's marked TODO
 
-**Implemented:** auth, notes CRUD + MD/PDF/TXT/JSON import + JSON/MD/PDF export with lossless round-trip, a full Markdown editor (toolbar, live preview, in-editor formatting guide) shared by notes and reviewers, the reviewer generation workflow, the quiz generation workflow with 7 question types, an interactive quiz player with auto-grading and a timer, results/review screens, flashcards extracted from reviewer Markdown, guest/quick mode, sharing with view/edit permissions, a settings page, global search, and compressed at-rest storage for note/reviewer content.
+**Implemented:** auth, notes CRUD + local and connected-app imports, JSON/MD/PDF export, a full Markdown editor, reviewer and quiz generation, 7 question types, Review and Exam test modes, timers and auto-grading, results screens, flashcards, full guest mode, sharing, per-user Google/Notion connections, settings, global search, and compressed at-rest storage.
 
 **Marked as TODO in code** rather than faked:
-- Direct Google Docs API import — Google Docs content can still be brought in through file export or paste.
 - Mastery-mode adaptive practice / spaced repetition scheduling (`app/(app)/study/page.tsx`).
 
 ## Design system

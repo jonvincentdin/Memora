@@ -5,8 +5,12 @@ import { canView } from "@/lib/permissions";
 import { QuizPlayer } from "@/components/quizzes/quiz-player";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
-export default async function QuizPlayPage(props: { params: Promise<{ id: string }> }) {
+export default async function QuizPlayPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ mode?: string }>;
+}) {
   const params = await props.params;
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const allowed = await canView(user.id, "QUIZ", params.id);
   if (!allowed) notFound();
@@ -15,14 +19,16 @@ export default async function QuizPlayPage(props: { params: Promise<{ id: string
   if (!quiz) notFound();
 
   const configuration = quiz.configuration as { timeLimitMinutes?: number; randomizeQuestions?: boolean };
+  const testMode = searchParams.mode === "review" ? "review" : "exam";
 
   return (
     <QuizPlayer
       quizId={quiz.id}
       title={quiz.title}
       questions={quiz.questions as unknown as QuizQuestion[]}
-      timeLimitMinutes={configuration.timeLimitMinutes}
+      timeLimitMinutes={testMode === "exam" ? configuration.timeLimitMinutes : undefined}
       randomize={configuration.randomizeQuestions ?? false}
+      testMode={testMode}
     />
   );
 }

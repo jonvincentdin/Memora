@@ -32,6 +32,26 @@ export interface GradedAnswer {
   correct: boolean;
 }
 
+/** Human-readable answer used by review mode and printable answer keys. */
+export function formatCorrectAnswer(question: QuizQuestion): string {
+  switch (question.type) {
+    case "multiple_choice":
+      return `${String.fromCharCode(65 + question.answer)}. ${question.choices[question.answer] ?? "Unknown option"}`;
+    case "true_false":
+      return question.answer ? "True" : "False";
+    case "multiple_select":
+      return question.answer
+        .map((index) => `${String.fromCharCode(65 + index)}. ${question.choices[index] ?? "Unknown option"}`)
+        .join("; ");
+    case "identification":
+    case "fill_in_the_blank":
+    case "short_answer":
+      return question.acceptableAnswers.join(" / ");
+    case "matching":
+      return question.pairs.map((pair) => `${pair.left} -> ${pair.right}`).join("; ");
+  }
+}
+
 export function gradeQuiz(questions: QuizQuestion[], answers: Record<string, unknown>) {
   const gradedAnswers: Record<string, GradedAnswer> = {};
   let score = 0;

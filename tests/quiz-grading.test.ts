@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gradeQuiz, isAnswerCorrect } from "@/lib/quiz-grading";
+import { formatCorrectAnswer, gradeQuiz, isAnswerCorrect } from "@/lib/quiz-grading";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
 const questions: QuizQuestion[] = [
@@ -28,5 +28,11 @@ describe("quiz grading", () => {
     expect(gradeQuiz(questions, {}).score).toBe(0);
     expect(isAnswerCorrect(questions[2], [0, 1])).toBe(false);
     expect(isAnswerCorrect(questions[4], { A: "One" })).toBe(false);
+  });
+
+  it("formats answer keys for objective, text, and matching questions", () => {
+    expect(formatCorrectAnswer(questions[0])).toBe("B. B");
+    expect(formatCorrectAnswer(questions[3])).toBe("Memora");
+    expect(formatCorrectAnswer(questions[4])).toBe("A -> One; B -> Two");
   });
 });

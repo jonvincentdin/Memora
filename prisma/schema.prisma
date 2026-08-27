@@ -30,8 +30,31 @@ model User {
   sharesGranted ResourceShare[] @relation("SharesGrantedToUser")
   settings      UserSettings?
   collections   ShareCollection[]
+  integrations IntegrationConnection[]
 
   @@map("users")
+}
+
+model IntegrationConnection {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     IntegrationProvider
+  accessToken  Bytes
+  refreshToken Bytes?
+  expiresAt    DateTime?
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("integration_connections")
+}
+
+enum IntegrationProvider {
+  GOOGLE
+  NOTION
 }
 
 model UserSettings {

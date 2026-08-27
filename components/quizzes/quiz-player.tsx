@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 import { QuestionInput } from "@/components/quizzes/question-input";
+import { formatCorrectAnswer, isAnswerCorrect } from "@/lib/quiz-grading";
 
 interface QuizPlayerProps {
   quizId: string;
@@ -14,6 +15,7 @@ interface QuizPlayerProps {
   questions: QuizQuestion[];
   timeLimitMinutes?: number;
   randomize: boolean;
+  testMode: "review" | "exam";
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -25,13 +27,15 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMinutes, randomize }: QuizPlayerProps) {
+export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMinutes, randomize, testMode }: QuizPlayerProps) {
   const router = useRouter();
   const questions = useMemo(() => (randomize ? shuffle(rawQuestions) : rawQuestions), [rawQuestions, randomize]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
   const [secondsLeft, setSecondsLeft] = useState(timeLimitMinutes ? timeLimitMinutes * 60 : null);
 
   const question = questions[index];
@@ -49,6 +53,11 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
 
   function setAnswer(value: unknown) {
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
+    setChecked((prev) => {
+      const next = new Set(prev);
+      next.delete(question.id);
+      return next;
+    });
   }
 
   function toggleFlag() {
@@ -62,16 +71,23 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
 
   async function handleSubmit() {
     setSubmitting(true);
-    const res = await fetch(`/api/quizzes/${quizId}/attempts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers, flagged: Array.from(flagged) }),
-    });
-    const data = await res.json();
-    setSubmitting(false);
-    if (res.ok) {
-      router.push(`/quizzes/${quizId}/results?attempt=${data.attempt.id}`);
+    setSubmitError(null);
+    try {
+      const res = await fetch(`/api/quizzes/${quizId}/attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, flagged: Array.from(flagged) }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.attempt?.id) {
+        router.push(`/quizzes/${quizId}/results?attempt=${data.attempt.id}`);
+      } else {
+        setSubmitError(data?.error ?? "Couldn't submit this attempt. Please try again.");
+      }
+    } catch {
+      setSubmitError("We couldn't reach the server. Check your connection and try again.");
     }
+    setSubmitting(false);
   }
 
   const answeredCount = Object.keys(answers).length;
@@ -81,7 +97,12 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-display text-xl text-ink">{title}</h1>
+        <div>
+          <h1 className="font-display text-xl text-ink">{title}</h1>
+          <p className="text-xs text-ink-faint">
+            {testMode === "review" ? "Review mode · instant feedback" : "Exam mode · feedback after submission"}
+          </p>
+        </div>
         {secondsLeft !== null && (
           <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium", secondsLeft < 60 ? "bg-danger/10 text-danger" : "bg-ink/5 text-ink-soft")}>
             <Clock className="h-3.5 w-3.5" /> {minutes}:{String(seconds).padStart(2, "0")}
@@ -105,7 +126,39 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
         </div>
 
         <QuestionInput question={question} value={answers[question.id]} onChange={setAnswer} />
+
+        {testMode === "review" && (
+          <div className="mt-5 border-t border-line pt-4">
+            {!checked.has(question.id) ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={answers[question.id] === undefined}
+                onClick={() => setChecked((prev) => new Set(prev).add(question.id))}
+              >
+                Check answer
+              </Button>
+            ) : (
+              <div
+                className={cn(
+                  "rounded-lg border p-4 text-sm",
+                  isAnswerCorrect(question, answers[question.id])
+                    ? "border-success/30 bg-success/5"
+                    : "border-danger/30 bg-danger/5"
+                )}
+              >
+                <p className={cn("font-medium", isAnswerCorrect(question, answers[question.id]) ? "text-success" : "text-danger")}>
+                  {isAnswerCorrect(question, answers[question.id]) ? "Correct" : "Not quite"}
+                </p>
+                <p className="mt-2 text-ink"><strong>Correct answer:</strong> {formatCorrectAnswer(question)}</p>
+                <p className="mt-1 text-ink-soft"><strong>Explanation:</strong> {question.explanation || "No detailed explanation was provided."}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {submitError && <p className="mt-3 text-sm text-danger">{submitError}</p>}
 
       <div className="mt-5 flex items-center justify-between">
         <Button variant="outline" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
