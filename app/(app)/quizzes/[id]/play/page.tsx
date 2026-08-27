@@ -5,7 +5,8 @@ import { canView } from "@/lib/permissions";
 import { QuizPlayer } from "@/components/quizzes/quiz-player";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
-export default async function QuizPlayPage({ params }: { params: { id: string } }) {
+export default async function QuizPlayPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const allowed = await canView(user.id, "QUIZ", params.id);
   if (!allowed) notFound();

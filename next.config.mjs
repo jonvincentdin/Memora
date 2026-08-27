@@ -26,9 +26,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["pdf-parse"],
-  },
+  serverExternalPackages: ["pdf-parse"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

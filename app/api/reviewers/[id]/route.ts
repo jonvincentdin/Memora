@@ -4,9 +4,10 @@ import { requireUserOrNull } from "@/lib/auth/session";
 import { updateReviewerSchema } from "@/lib/validation/reviewer";
 import { canView, canEdit, isOwner, deleteSharesForResource } from "@/lib/permissions";
 import { findReviewerById, updateReviewer } from "@/lib/reviewers-repo";
-import { withApiErrorHandling } from "@/lib/api/handler";
+import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 
-export const GET = withApiErrorHandling(async (_request: Request, { params }: { params: { id: string } }) => {
+export const GET = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -21,7 +22,8 @@ export const GET = withApiErrorHandling(async (_request: Request, { params }: { 
   return NextResponse.json({ reviewer });
 });
 
-export const PATCH = withApiErrorHandling(async (request: Request, { params }: { params: { id: string } }) => {
+export const PATCH = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -38,7 +40,8 @@ export const PATCH = withApiErrorHandling(async (request: Request, { params }: {
   return NextResponse.json({ reviewer });
 });
 
-export const DELETE = withApiErrorHandling(async (_request: Request, { params }: { params: { id: string } }) => {
+export const DELETE = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

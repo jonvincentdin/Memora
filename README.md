@@ -1,12 +1,12 @@
 # Memora
 
-A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 14, TypeScript, Prisma, and NextAuth.
+A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 15, TypeScript, Prisma, and NextAuth.
 
 Memora never calls an AI API on its own behalf. Instead, it generates ready-to-use prompts from your notes; you paste them into Claude (or any AI assistant you already use) and bring the structured result back in. You review and validate everything before it's saved.
 
 ## Stack
 
-- **Framework:** Next.js 14 (App Router) + TypeScript
+- **Framework:** Next.js 15 (App Router) + TypeScript
 - **Styling:** Tailwind CSS with a custom design system (`tailwind.config.ts`)
 - **Database:** PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
 - **Auth:** NextAuth.js (credentials/email+password by default; Google OAuth scaffolded but disabled)
@@ -24,6 +24,8 @@ npm run dev
 ```
 
 Generate `AUTH_SECRET` with `openssl rand -base64 32`.
+
+Never commit `.env`. If a secret is exposed, removing the file is not enough: rotate the credential and remove it from Git history.
 
 **Do you need to run `prisma migrate dev` every time?** No — only when `prisma/schema.prisma` itself changes (adding/renaming a field, changing a type, etc.). Normal day-to-day use (creating notes, editing reviewers, taking quizzes) is just regular database reads/writes through Prisma Client and never touches migrations. This particular version of the schema *did* change (Note/Reviewer content moved from `String` to compressed `Bytes`), so if you're upgrading from an earlier copy of this project, run the migration once to apply it — after that you're done until the schema changes again.
 
@@ -57,7 +59,7 @@ lib/
   prompts/           builds the "prepare notes" and "generate quiz" AI prompts
   pdf-export.tsx     client-side PDF rendering (real HTML/fonts via html2canvas)
   quiz-grading.ts     shared grading logic (used by both saved attempts and guest mode)
-  rate-limit.ts / guest-rate-limit.ts   best-effort in-memory throttling (see Security below)
+  rate-limit.ts / guest-rate-limit.ts   durable database-backed throttling (see Security below)
 prisma/schema.prisma
 ```
 
@@ -102,8 +104,8 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 
 - Passwords hashed with bcrypt (cost factor 12).
 - Login errors are deliberately generic ("Invalid email or password") and always run `bcrypt.compare` — even against a dummy hash when the email doesn't exist — so response timing doesn't leak which emails are registered.
-- Best-effort in-memory rate limiting on login (per email) and registration (per IP): see `lib/rate-limit.ts`. This is a real limitation, not full protection — it resets on cold start and doesn't coordinate across serverless instances. Swap in Upstash Redis / Vercel KV before relying on this in production.
-- Guest endpoints (`/api/guest/*`) have their own rate limit and a hard content-size cap, since they're unauthenticated.
+- Database-backed rate limiting protects login (per email), registration (per IP), guest endpoints, and public feedback consistently across serverless instances and cold starts.
+- Guest endpoints (`/api/guest/*`) also have hard content-size caps because they are unauthenticated.
 - Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) are set globally in `next.config.mjs`.
 - Markdown is rendered via `react-markdown` **without** the `rehype-raw` plugin, so raw HTML in note/reviewer content (whether typed by a user or returned by an AI) is displayed as literal text rather than executed — this is what keeps rendering safe without a separate sanitization pass.
 - File uploads are capped by size, restricted to `.md`/`.txt`/`.pdf`/Memora's own `.json` exports by extension, and PDFs are additionally verified by magic-byte sniffing rather than trusting the extension alone.
@@ -113,10 +115,8 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 **Implemented:** auth, notes CRUD + MD/PDF/TXT/JSON import + JSON/MD/PDF export with lossless round-trip, a full Markdown editor (toolbar, live preview, in-editor formatting guide) shared by notes and reviewers, the reviewer generation workflow, the quiz generation workflow with 7 question types, an interactive quiz player with auto-grading and a timer, results/review screens, flashcards extracted from reviewer Markdown, guest/quick mode, sharing with view/edit permissions, a settings page, global search, and compressed at-rest storage for note/reviewer content.
 
 **Marked as TODO in code** rather than faked:
-- Direct Google Docs / Notion API import (`lib/imports/link-import.ts`) — falls back to asking the user to paste exported content, since real integration requires OAuth credentials this template doesn't assume you have.
+- Direct Google Docs API import — Google Docs content can still be brought in through file export or paste.
 - Mastery-mode adaptive practice / spaced repetition scheduling (`app/(app)/study/page.tsx`).
-- Dark theme wiring — tokens exist in `tailwind.config.ts` (`colors.dark.*`) but there's no theme toggle/provider yet.
-- Durable, distributed rate limiting (currently best-effort in-memory — see Security above).
 
 ## Design system
 

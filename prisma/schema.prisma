@@ -288,3 +288,14 @@ model ShareFeedback {
   @@index([collectionId])
   @@map("share_feedback")
 }
+
+// Durable fixed-window counters shared by every serverless instance.
+model RateLimitBucket {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
+}

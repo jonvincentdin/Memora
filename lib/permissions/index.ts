@@ -57,9 +57,13 @@ export async function isOwner(userId: string, resourceType: ResourceType, resour
   return level === "OWNER";
 }
 
-/** Removes all share rows for a resource. Call this before/with resource deletion. */
+/** Removes polymorphic rows that cannot be protected by database foreign keys. */
 export async function deleteSharesForResource(resourceType: ResourceType, resourceId: string) {
-  await prisma.resourceShare.deleteMany({ where: { resourceType, resourceId } });
+  await prisma.$transaction([
+    prisma.resourceShare.deleteMany({ where: { resourceType, resourceId } }),
+    prisma.shareCollectionItem.deleteMany({ where: { resourceType, resourceId } }),
+    prisma.shareFeedback.deleteMany({ where: { resourceType, resourceId } }),
+  ]);
 }
 
 export async function shareResource(params: {
@@ -111,5 +115,15 @@ export async function revokeShare(params: {
   if (!owns) {
     throw new Error("Only the owner can revoke access.");
   }
-  await prisma.resourceShare.delete({ where: { id: params.shareId } });
+  const result = await prisma.resourceShare.deleteMany({
+    where: {
+      id: params.shareId,
+      ownerId: params.ownerId,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+    },
+  });
+  if (result.count !== 1) {
+    throw new Error("Share not found for this resource.");
+  }
 }

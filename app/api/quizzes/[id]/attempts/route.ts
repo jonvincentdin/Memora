@@ -6,10 +6,11 @@ import { canView } from "@/lib/permissions";
 import { submitAttemptSchema } from "@/lib/validation/quiz";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 import { gradeQuiz } from "@/lib/quiz-grading";
-import { withApiErrorHandling } from "@/lib/api/handler";
+import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 
 // GET: list this user's past attempts for a quiz. POST: submit a new attempt (auto-graded).
-export const GET = withApiErrorHandling(async (_request: Request, { params }: { params: { id: string } }) => {
+export const GET = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,7 +25,8 @@ export const GET = withApiErrorHandling(async (_request: Request, { params }: { 
   return NextResponse.json({ attempts });
 });
 
-export const POST = withApiErrorHandling(async (request: Request, { params }: { params: { id: string } }) => {
+export const POST = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

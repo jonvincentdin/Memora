@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { QuizWizard } from "@/components/quizzes/quiz-wizard";
 import { formatRelativeTime } from "@/lib/utils";
 
-export default async function QuizzesPage({ searchParams }: { searchParams: { fromReviewer?: string } }) {
+export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const [quizzes, notes, reviewers] = await Promise.all([
     prisma.quiz.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" } }),

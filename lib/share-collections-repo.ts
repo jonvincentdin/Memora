@@ -183,6 +183,20 @@ export async function addFeedback(params: {
   const collection = await prisma.shareCollection.findUnique({ where: { slug: params.slug } });
   if (!collection || !collection.isPublished) throw new Error("Collection not found.");
 
+  if (params.resourceType && params.resourceId) {
+    const included = await prisma.shareCollectionItem.findUnique({
+      where: {
+        collectionId_resourceType_resourceId: {
+          collectionId: collection.id,
+          resourceType: params.resourceType,
+          resourceId: params.resourceId,
+        },
+      },
+      select: { id: true },
+    });
+    if (!included) throw new Error("That resource is not part of this collection.");
+  }
+
   return prisma.shareFeedback.create({
     data: {
       collectionId: collection.id,

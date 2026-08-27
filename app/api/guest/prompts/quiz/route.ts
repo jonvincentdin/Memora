@@ -20,7 +20,7 @@ const bodySchema = z.object({
 });
 
 export const POST = withApiErrorHandling(async (request: Request) => {
-  const limited = guestRateLimit(request);
+  const limited = await guestRateLimit(request);
   if (limited) return limited;
 
   const body = await request.json().catch(() => null);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withApiErrorHandling } from "@/lib/api/handler";
+import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 import { guestRateLimit } from "@/lib/guest-rate-limit";
 import { addFeedback } from "@/lib/share-collections-repo";
 import { z } from "zod";
@@ -9,10 +9,13 @@ const feedbackSchema = z.object({
   message: z.string().min(1, "Say something first.").max(2000),
   resourceType: z.enum(["NOTE", "REVIEWER", "QUIZ"]).optional(),
   resourceId: z.string().optional(),
+}).refine((value) => Boolean(value.resourceType) === Boolean(value.resourceId), {
+  message: "A feedback resource type and id must be provided together.",
 });
 
-export const POST = withApiErrorHandling(async (request: Request, { params }: { params: { slug: string } }) => {
-  const limited = guestRateLimit(request);
+export const POST = withApiErrorHandling(async (request: Request, context: RouteContext<{ slug: string }>) => {
+  const params = await context.params;
+  const limited = await guestRateLimit(request);
   if (limited) return limited;
 
   const body = await request.json().catch(() => null);

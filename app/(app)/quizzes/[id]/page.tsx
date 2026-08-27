@@ -11,7 +11,8 @@ import { ExportQuizPdfButton } from "@/components/quizzes/export-quiz-pdf-button
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
-export default async function QuizDetailPage({ params }: { params: { id: string } }) {
+export default async function QuizDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const access = await getAccessLevel(user.id, "QUIZ", params.id);
   if (access === "NONE") notFound();
