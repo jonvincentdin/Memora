@@ -31,6 +31,8 @@ Never commit `.env`. If a secret is exposed, removing the file is not enough: ro
 
 `npm install` runs `prisma generate` automatically (via `postinstall`). If you're behind a restrictive network/proxy and it fails to fetch Prisma's query-engine binary, run `npx prisma generate` again once you have access to `binaries.prisma.sh`.
 
+Vercel runs `prisma migrate deploy` for production deployments only. Preview builds skip database migrations so they do not require or modify the production database.
+
 ## Project structure
 
 ```
