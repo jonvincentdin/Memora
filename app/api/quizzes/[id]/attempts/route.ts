@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUserOrNull } from "@/lib/auth/session";
 import { canView } from "@/lib/permissions";
@@ -48,7 +49,7 @@ export const POST = withApiErrorHandling(async (request: Request, { params }: { 
       quizId: quiz.id,
       score,
       totalQuestions: questions.length,
-      answers: gradedAnswers,
+      answers: gradedAnswers as unknown as Prisma.InputJsonValue,
       completedAt: new Date(),
     },
   });
