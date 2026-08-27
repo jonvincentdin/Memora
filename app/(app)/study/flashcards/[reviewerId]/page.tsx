@@ -5,7 +5,8 @@ import { FlashcardDeck } from "@/components/study/flashcard-deck";
 import { extractFlashcardsFromMarkdown } from "@/lib/flashcards";
 import { findReviewerById } from "@/lib/reviewers-repo";
 
-export default async function FlashcardSessionPage({ params }: { params: { reviewerId: string } }) {
+export default async function FlashcardSessionPage(props: { params: Promise<{ reviewerId: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const allowed = await canView(user.id, "REVIEWER", params.reviewerId);
   if (!allowed) notFound();

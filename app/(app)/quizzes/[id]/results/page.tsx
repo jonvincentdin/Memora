@@ -6,13 +6,14 @@ import { requireUser } from "@/lib/auth/session";
 import { canView } from "@/lib/permissions";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
-export default async function QuizResultsPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { attempt?: string };
-}) {
+export default async function QuizResultsPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ attempt?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await requireUser();
   const allowed = await canView(user.id, "QUIZ", params.id);
   if (!allowed) notFound();

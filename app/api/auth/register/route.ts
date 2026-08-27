@@ -7,7 +7,7 @@ import { withApiErrorHandling } from "@/lib/api/handler";
 
 export const POST = withApiErrorHandling(async (request: Request) => {
   const ip = getClientIp(request.headers);
-  if (isRateLimited(`register:${ip}`)) {
+  if (await isRateLimited(`register:${ip}`)) {
     return NextResponse.json({ error: "Too many attempts. Wait a minute and try again." }, { status: 429 });
   }
 

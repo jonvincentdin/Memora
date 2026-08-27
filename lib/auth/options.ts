@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
 
         // Best-effort brute-force throttle, keyed by email so it can't be
         // bypassed by rotating IPs alone (see lib/rate-limit.ts for caveats).
-        if (isRateLimited(`login:${normalizedEmail}`)) {
+        if (await isRateLimited(`login:${normalizedEmail}`)) {
           return null;
         }
 

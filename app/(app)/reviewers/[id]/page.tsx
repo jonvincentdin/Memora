@@ -4,7 +4,8 @@ import { getAccessLevel } from "@/lib/permissions";
 import { ReviewerDetail } from "@/components/reviewers/reviewer-detail";
 import { findReviewerById } from "@/lib/reviewers-repo";
 
-export default async function ReviewerDetailPage({ params }: { params: { id: string } }) {
+export default async function ReviewerDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const access = await getAccessLevel(user.id, "REVIEWER", params.id);
   if (access === "NONE") notFound();

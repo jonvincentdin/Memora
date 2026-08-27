@@ -4,7 +4,8 @@ import { getAccessLevel } from "@/lib/permissions";
 import { NoteDetail } from "@/components/notes/note-detail";
 import { findNoteById } from "@/lib/notes-repo";
 
-export default async function NoteDetailPage({ params }: { params: { id: string } }) {
+export default async function NoteDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const access = await getAccessLevel(user.id, "NOTE", params.id);
   if (access === "NONE") notFound();

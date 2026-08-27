@@ -21,7 +21,7 @@ const bodySchema = z.object({
 // the "quick mode" path described in the guest-mode UI: generate a prompt
 // from pasted text only, with nothing persisted server-side.
 export const POST = withApiErrorHandling(async (request: Request) => {
-  const limited = guestRateLimit(request);
+  const limited = await guestRateLimit(request);
   if (limited) return limited;
 
   const body = await request.json().catch(() => null);

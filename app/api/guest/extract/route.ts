@@ -7,7 +7,7 @@ import { withApiErrorHandling } from "@/lib/api/handler";
 // persisting anything — used by guest mode so people without an account can
 // still get their notes into a prompt. Nothing here touches the database.
 export const POST = withApiErrorHandling(async (request: Request) => {
-  const limited = guestRateLimit(request);
+  const limited = await guestRateLimit(request);
   if (limited) return limited;
 
   const form = await request.formData().catch(() => null);

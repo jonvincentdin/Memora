@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
+
+export type RouteContext<Params extends Record<string, string>> = {
+  params: Promise<Params>;
+};
 
 /**
  * Wraps a route handler so an unexpected exception (a bad Prisma query, a
@@ -22,6 +27,9 @@ export function withApiErrorHandling<Args extends unknown[]>(
     try {
       return await handler(request, ...args);
     } catch (err) {
+      // Preserve Next.js control-flow signals (dynamic rendering, redirects,
+      // notFound) instead of disguising them as application 500 responses.
+      unstable_rethrow(err);
       console.error("[api] unhandled error:", err);
       return NextResponse.json(
         { error: "Something went wrong on our end. Please try again in a moment." },

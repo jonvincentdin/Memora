@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserOrNull } from "@/lib/auth/session";
-import { withApiErrorHandling } from "@/lib/api/handler";
+import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 import { addCollectionItem, removeCollectionItem } from "@/lib/share-collections-repo";
 import { z } from "zod";
 
@@ -9,7 +9,8 @@ const addSchema = z.object({
   resourceId: z.string().min(1),
 });
 
-export const POST = withApiErrorHandling(async (request: Request, { params }: { params: { id: string } }) => {
+export const POST = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -27,7 +28,8 @@ export const POST = withApiErrorHandling(async (request: Request, { params }: { 
   }
 });
 
-export const DELETE = withApiErrorHandling(async (request: Request, { params }: { params: { id: string } }) => {
+export const DELETE = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {
+  const params = await context.params;
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

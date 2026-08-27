@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ReviewerWizard } from "@/components/reviewers/reviewer-wizard";
 import { formatRelativeTime } from "@/lib/utils";
 
-export default async function ReviewersPage({ searchParams }: { searchParams: { fromNote?: string } }) {
+export default async function ReviewersPage(props: { searchParams: Promise<{ fromNote?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const [reviewers, notes] = await Promise.all([
     prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true, description: true, style: true, updatedAt: true } }),
