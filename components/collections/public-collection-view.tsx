@@ -21,12 +21,13 @@ export function PublicCollectionView({ collection }: { collection: PublicCollect
     [collection.reviewers]
   );
 
-  const sections: { key: SectionKey; label: string; icon: typeof FileText; count: number }[] = [
+  const allSections: { key: SectionKey; label: string; icon: typeof FileText; count: number }[] = [
     { key: "notes", label: "Notes", icon: FileText, count: collection.notes.length },
     { key: "reviewers", label: "Reviewers", icon: ScrollText, count: collection.reviewers.length },
     { key: "quizzes", label: "Quizzes", icon: HelpCircle, count: collection.quizzes.length },
     { key: "flashcards", label: "Flashcards", icon: Layers, count: flashcardsByReviewer.length },
-  ].filter((s) => s.count > 0);
+  ];
+  const sections = allSections.filter((s) => s.count > 0);
 
   const [active, setActive] = useState<SectionKey>(sections[0]?.key ?? "notes");
   const [feedback, setFeedback] = useState(collection.feedback);
@@ -154,7 +155,7 @@ function PublicQuiz({ title, description, questions }: { title: string; descript
           {questions.map((q, i) => (
             <div key={q.id}>
               <p className="mb-2 text-sm font-medium text-ink">
-                {i + 1}. {q.prompt}
+                {i + 1}. {q.question}
               </p>
               <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setAnswers((prev) => ({ ...prev, [q.id]: v }))} />
             </div>
@@ -272,7 +273,7 @@ function FeedbackSection({
       } else if (!res.ok) {
         setError(data.error ?? "Couldn't send feedback.");
       } else {
-        onSubmitted({ id: data.feedback.id, authorName: name.trim() || null, message: message.trim(), createdAt: new Date().toISOString() });
+        onSubmitted({ id: data.feedback.id, authorName: name.trim() || null, message: message.trim(), createdAt: new Date() });
         setMessage("");
         setSent(true);
         setTimeout(() => setSent(false), 2000);
