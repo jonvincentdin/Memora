@@ -196,7 +196,7 @@ export default function CollectionDetailPage() {
         </div>
       </div>
 
-      <h2 className="mt-8 text-sm font-medium text-ink">Choose what's included</h2>
+      <h2 className="mt-8 text-sm font-medium text-ink">Choose what&apos;s included</h2>
       <div className="mt-2 flex gap-1 rounded-lg border border-line bg-surface p-1 w-fit">
         {TABS.map((t) => (
           <button
