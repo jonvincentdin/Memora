@@ -17,16 +17,23 @@ const LINE_HEIGHT = 16;
  * than styled, which keeps this dependency-light and reliable across
  * AI-generated output.
  */
-export function exportMarkdownToPdf(title: string, markdown: string) {
+export function buildMarkdownPdf(title: string, markdown: string): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const contentWidth = pageWidth - PAGE_MARGIN * 2;
   let y = PAGE_MARGIN;
 
+  function startPage() {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
+    doc.setTextColor(20, 24, 39);
+  }
+
   function ensureSpace(needed: number) {
     if (y + needed > pageHeight - PAGE_MARGIN) {
       doc.addPage();
+      startPage();
       y = PAGE_MARGIN;
     }
   }
@@ -42,7 +49,10 @@ export function exportMarkdownToPdf(title: string, markdown: string) {
   function writeParagraph(text: string, fontSize: number, style: "normal" | "bold" | "italic" = "normal", indent = 0) {
     doc.setFont("helvetica", style);
     doc.setFontSize(fontSize);
+    doc.setTextColor(20, 24, 39);
     const lines: string[] = doc.splitTextToSize(stripInlineMarkdown(text), contentWidth - indent);
+    const blockHeight = lines.length * fontSize * 1.35;
+    if (blockHeight <= pageHeight - PAGE_MARGIN * 2) ensureSpace(blockHeight);
     for (const line of lines) {
       ensureSpace(LINE_HEIGHT);
       doc.text(line, PAGE_MARGIN + indent, y);
@@ -52,6 +62,22 @@ export function exportMarkdownToPdf(title: string, markdown: string) {
 
   const lines = markdown.split("\n");
   let tableBuffer: string[][] | null = null;
+
+  function estimatedLineHeight(rawLine: string): number {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) return 6;
+    let size = 11;
+    let indent = 0;
+    if (line.startsWith("# ")) size = 18;
+    else if (line.startsWith("## ")) size = 15;
+    else if (line.startsWith("### ")) size = 13;
+    else if (line.startsWith("#### ")) size = 12;
+    else if (line.startsWith("> ")) indent = 16;
+    else if (/^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line)) indent = 12;
+    const text = line.replace(/^#{1,4}\s+/, "").replace(/^>\s+/, "");
+    const wrapped = doc.splitTextToSize(stripInlineMarkdown(text), contentWidth - indent) as string[];
+    return Math.max(1, wrapped.length) * size * 1.35;
+  }
 
   function flushTable() {
     if (!tableBuffer || tableBuffer.length === 0) return;
@@ -73,13 +99,27 @@ export function exportMarkdownToPdf(title: string, markdown: string) {
     tableBuffer = null;
   }
 
+  startPage();
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.text(stripInlineMarkdown(title), PAGE_MARGIN, y);
   y += 30;
 
-  for (const rawLine of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
     const line = rawLine.trimEnd();
+
+    // Keep ordinary lesson sections together when they fit on one page, so
+    // headings and the last bullet do not become isolated page orphans.
+    if (/^#{1,4}\s+/.test(line)) {
+      let sectionHeight = 0;
+      for (let next = index; next < lines.length; next += 1) {
+        if (next > index && /^#{1,4}\s+/.test(lines[next])) break;
+        if (/^\|.*\|$/.test(lines[next].trim())) break;
+        sectionHeight += estimatedLineHeight(lines[next]);
+      }
+      if (sectionHeight <= pageHeight - PAGE_MARGIN * 2) ensureSpace(sectionHeight);
+    }
 
     if (/^\|.*\|$/.test(line.trim())) {
       const cells = line.trim().slice(1, -1).split("|").map((c) => c.trim());
@@ -106,7 +146,21 @@ export function exportMarkdownToPdf(title: string, markdown: string) {
   }
   flushTable();
 
-  doc.save(`${sanitizeFilename(title)}.pdf`);
+  const totalPages = doc.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(90, 90, 90);
+    doc.text(`Memora  |  ${title}`, PAGE_MARGIN, pageHeight - 20);
+    doc.text(`Page ${page} of ${totalPages}`, pageWidth - PAGE_MARGIN, pageHeight - 20, { align: "right" });
+  }
+
+  return doc;
+}
+
+export function exportMarkdownToPdf(title: string, markdown: string) {
+  buildMarkdownPdf(title, markdown).save(`${sanitizeFilename(title)}.pdf`);
 }
 
 export interface QuizExportMetadata {
