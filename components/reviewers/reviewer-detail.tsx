@@ -11,7 +11,6 @@ import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { MarkdownEditor } from "@/components/markdown/editor";
 import { ShareDialog } from "@/components/sharing/share-dialog";
 import { DeleteReviewerButton } from "@/components/reviewers/delete-reviewer-button";
-import { exportMarkdownToPdf } from "@/lib/pdf-export";
 import { formatDate } from "@/lib/utils";
 
 interface ReviewerDetailProps {
@@ -44,8 +43,12 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
     setSaving(false);
     if (res.ok) {
       setEditing(false);
-      router.refresh();
     }
+  }
+
+  async function handlePdfExport() {
+    const { exportMarkdownToPdf } = await import("@/lib/pdf-export");
+    exportMarkdownToPdf(reviewer.title, content);
   }
 
   return (
@@ -63,7 +66,7 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
           >
             <Download className="h-3.5 w-3.5" /> JSON
           </a>
-          <Button variant="outline" size="sm" onClick={() => exportMarkdownToPdf(reviewer.title, content)}>
+          <Button variant="outline" size="sm" onClick={() => void handlePdfExport()}>
             <FileText className="h-3.5 w-3.5" /> PDF
           </Button>
           <Link
@@ -95,7 +98,7 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
         </>
       ) : (
         <>
-          <h1 className="font-display text-2xl text-ink">{reviewer.title}</h1>
+          <h1 className="font-display text-2xl text-ink">{title}</h1>
           {reviewer.description && <p className="mt-1 text-ink-soft">{reviewer.description}</p>}
           <p className="mt-1 text-xs text-ink-faint">
             Last updated {formatDate(reviewer.updatedAt)}
@@ -103,7 +106,7 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
           </p>
 
           <div className="mt-6 border-t border-line pt-6">
-            <MarkdownRenderer content={reviewer.content} />
+            <MarkdownRenderer content={content} />
           </div>
         </>
       )}

@@ -13,6 +13,7 @@ import type { Note as DbNote } from "@prisma/client";
  * so there is exactly one place that knows the column is compressed.
  */
 export type Note = Omit<DbNote, "content"> & { content: string };
+export type NoteSummary = Omit<DbNote, "content">;
 
 function hydrate(note: DbNote): Note {
   return { ...note, content: decompressText(note.content) };
@@ -60,4 +61,25 @@ export async function findNotesByIds(ids: string[]): Promise<Note[]> {
 export async function findNotesByOwner(ownerId: string): Promise<Note[]> {
   const notes = await prisma.note.findMany({ where: { ownerId }, orderBy: { updatedAt: "desc" } });
   return notes.map(hydrate);
+}
+
+/** Metadata-only list for the notes library. Avoids transferring and
+ * decompressing every full lesson merely to render navigation cards. */
+export async function findNoteSummariesByOwner(ownerId: string): Promise<NoteSummary[]> {
+  return prisma.note.findMany({
+    where: { ownerId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      ownerId: true,
+      title: true,
+      description: true,
+      originalFilename: true,
+      sourceType: true,
+      sourceUrl: true,
+      fileExtension: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 }

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
-import { canView } from "@/lib/permissions";
+import { getAccessLevelForOwner } from "@/lib/permissions";
 import { FlashcardDeck } from "@/components/study/flashcard-deck";
 import { extractFlashcardsFromMarkdown } from "@/lib/flashcards";
 import { findReviewerById } from "@/lib/reviewers-repo";
@@ -8,11 +8,10 @@ import { findReviewerById } from "@/lib/reviewers-repo";
 export default async function FlashcardSessionPage(props: { params: Promise<{ reviewerId: string }> }) {
   const params = await props.params;
   const user = await requireUser();
-  const allowed = await canView(user.id, "REVIEWER", params.reviewerId);
-  if (!allowed) notFound();
-
   const reviewer = await findReviewerById(params.reviewerId);
   if (!reviewer) notFound();
+  const access = await getAccessLevelForOwner(user.id, "REVIEWER", params.reviewerId, reviewer.ownerId);
+  if (access === "NONE") notFound();
 
   const cards = extractFlashcardsFromMarkdown(reviewer.content);
 

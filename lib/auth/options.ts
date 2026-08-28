@@ -40,11 +40,18 @@ export const authOptions: NextAuthOptions = {
 
         // Best-effort brute-force throttle, keyed by email so it can't be
         // bypassed by rotating IPs alone (see lib/rate-limit.ts for caveats).
-        if (await isRateLimited(`login:${normalizedEmail}`)) {
+        // Both operations are independent database calls. Running them in a
+        // single wave avoids an extra network round trip on every login.
+        const [limited, user] = await Promise.all([
+          isRateLimited(`login:${normalizedEmail}`),
+          prisma.user.findUnique({
+            where: { email: normalizedEmail },
+            select: { id: true, name: true, email: true, image: true, passwordHash: true },
+          }),
+        ]);
+        if (limited) {
           return null;
         }
-
-        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
         // Deliberately generic outcome, and always run bcrypt.compare (even
         // against a dummy hash when there's no user) so response time

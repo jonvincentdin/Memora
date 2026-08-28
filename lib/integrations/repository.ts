@@ -38,13 +38,22 @@ export async function saveConnection(input: {
   });
 }
 
-export async function connectionStatuses(userId: string) {
-  const connections = await prisma.integrationConnection.findMany({ where: { userId }, select: { provider: true, metadata: true, updatedAt: true } });
-  return connections.map((connection) => ({
-    provider: connection.provider.toLowerCase(),
-    metadata: connection.metadata,
-    updatedAt: connection.updatedAt,
-  }));
+export async function connectionStatuses(userId: string): Promise<
+  Array<{ provider: "google" | "notion"; metadata: { email?: string; workspaceName?: string } | null }>
+> {
+  const connections = await prisma.integrationConnection.findMany({ where: { userId }, select: { provider: true, metadata: true } });
+  return connections.map((connection) => {
+    const raw = connection.metadata && typeof connection.metadata === "object" && !Array.isArray(connection.metadata)
+      ? connection.metadata as Record<string, unknown>
+      : null;
+    return {
+      provider: connection.provider === IntegrationProvider.GOOGLE ? "google" : "notion",
+      metadata: raw ? {
+        email: typeof raw.email === "string" ? raw.email : undefined,
+        workspaceName: typeof raw.workspaceName === "string" ? raw.workspaceName : undefined,
+      } : null,
+    };
+  });
 }
 
 export async function disconnectProvider(userId: string, provider: OAuthProvider) {

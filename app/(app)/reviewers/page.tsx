@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { ReviewerWizard } from "@/components/reviewers/reviewer-wizard";
+import { ReviewerWizardLauncher } from "@/components/reviewers/reviewer-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default async function ReviewersPage(props: { searchParams: Promise<{ fromNote?: string }> }) {
@@ -22,7 +22,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
           <h1 className="font-display text-2xl text-ink">Reviewers</h1>
           <p className="mt-1 text-sm text-ink-soft">Structured study material built from your notes.</p>
         </div>
-        <ReviewerWizard notes={notes} defaultNoteId={searchParams.fromNote} />
+        <ReviewerWizardLauncher notes={notes} defaultNoteId={searchParams.fromNote} />
       </div>
 
       {reviewers.length === 0 ? (

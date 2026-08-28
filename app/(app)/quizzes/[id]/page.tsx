@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Download, PlayCircle } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
-import { getAccessLevel } from "@/lib/permissions";
+import { getAccessLevelForOwner } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { DeleteQuizButton } from "@/components/quizzes/delete-quiz-button";
 import { ShareDialog } from "@/components/sharing/share-dialog";
@@ -14,17 +14,18 @@ import type { QuizQuestion } from "@/lib/validation/quiz";
 export default async function QuizDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const user = await requireUser();
-  const access = await getAccessLevel(user.id, "QUIZ", params.id);
-  if (access === "NONE") notFound();
-
-  const quiz = await prisma.quiz.findUnique({ where: { id: params.id } });
+  const [quiz, attempts] = await Promise.all([
+    prisma.quiz.findUnique({ where: { id: params.id } }),
+    prisma.quizAttempt.findMany({
+      where: { quizId: params.id, userId: user.id, completedAt: { not: null } },
+      orderBy: { completedAt: "desc" },
+      take: 10,
+      select: { id: true, score: true, totalQuestions: true, completedAt: true },
+    }),
+  ]);
   if (!quiz) notFound();
-
-  const attempts = await prisma.quizAttempt.findMany({
-    where: { quizId: quiz.id, userId: user.id, completedAt: { not: null } },
-    orderBy: { completedAt: "desc" },
-    take: 10,
-  });
+  const access = await getAccessLevelForOwner(user.id, "QUIZ", params.id, quiz.ownerId);
+  if (access === "NONE") notFound();
 
   const questionCount = Array.isArray(quiz.questions) ? (quiz.questions as unknown[]).length : 0;
 

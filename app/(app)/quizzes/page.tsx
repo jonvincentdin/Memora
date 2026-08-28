@@ -4,14 +4,18 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { QuizWizard } from "@/components/quizzes/quiz-wizard";
+import { QuizWizardLauncher } from "@/components/quizzes/quiz-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
   const [quizzes, notes, reviewers] = await Promise.all([
-    prisma.quiz.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" } }),
+    prisma.quiz.findMany({
+      where: { ownerId: user.id },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, title: true, mode: true, questions: true, updatedAt: true },
+    }),
     prisma.note.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
     prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
   ]);
@@ -23,7 +27,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ fromR
           <h1 className="font-display text-2xl text-ink">Quizzes</h1>
           <p className="mt-1 text-sm text-ink-soft">Test yourself with questions built from your own material.</p>
         </div>
-        <QuizWizard notes={notes} reviewers={reviewers} defaultReviewerId={searchParams.fromReviewer} />
+        <QuizWizardLauncher notes={notes} reviewers={reviewers} defaultReviewerId={searchParams.fromReviewer} />
       </div>
 
       {quizzes.length === 0 ? (

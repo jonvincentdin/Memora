@@ -10,7 +10,6 @@ export function DeleteReviewerButton({ reviewerId }: { reviewerId: string }) {
   async function handleDelete() {
     await fetch(`/api/reviewers/${reviewerId}`, { method: "DELETE" });
     router.push("/reviewers");
-    router.refresh();
   }
 
   return (

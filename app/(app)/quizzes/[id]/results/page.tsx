@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, XCircle, ArrowLeft, RotateCcw } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
-import { canView } from "@/lib/permissions";
+import { getAccessLevelForOwner } from "@/lib/permissions";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 
 export default async function QuizResultsPage(
@@ -15,20 +15,20 @@ export default async function QuizResultsPage(
   const searchParams = await props.searchParams;
   const params = await props.params;
   const user = await requireUser();
-  const allowed = await canView(user.id, "QUIZ", params.id);
-  if (!allowed) notFound();
-
-  const quiz = await prisma.quiz.findUnique({ where: { id: params.id } });
-  if (!quiz) notFound();
-
-  const attempt = searchParams.attempt
-    ? await prisma.quizAttempt.findUnique({ where: { id: searchParams.attempt } })
-    : await prisma.quizAttempt.findFirst({
-        where: { quizId: quiz.id, userId: user.id, completedAt: { not: null } },
+  const attemptQuery = searchParams.attempt
+    ? prisma.quizAttempt.findFirst({ where: { id: searchParams.attempt, quizId: params.id, userId: user.id } })
+    : prisma.quizAttempt.findFirst({
+        where: { quizId: params.id, userId: user.id, completedAt: { not: null } },
         orderBy: { completedAt: "desc" },
       });
-
-  if (!attempt || attempt.userId !== user.id) notFound();
+  const [quiz, attempt] = await Promise.all([
+    prisma.quiz.findUnique({ where: { id: params.id } }),
+    attemptQuery,
+  ]);
+  if (!quiz) notFound();
+  const access = await getAccessLevelForOwner(user.id, "QUIZ", params.id, quiz.ownerId);
+  if (access === "NONE") notFound();
+  if (!attempt) notFound();
 
   const questions = quiz.questions as unknown as QuizQuestion[];
   const gradedAnswers = attempt.answers as Record<string, { given: unknown; correct: boolean }>;

@@ -11,6 +11,7 @@ export function Topbar({ userName }: { userName: string }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -54,10 +55,16 @@ export function Topbar({ userName }: { userName: string }) {
                 <UserIcon className="h-4 w-4" /> Settings
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                disabled={signingOut}
+                onClick={async () => {
+                  setSigningOut(true);
+                  await signOut({ redirect: false });
+                  router.replace("/");
+                  router.refresh();
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger hover:bg-danger/5"
               >
-                <LogOut className="h-4 w-4" /> Sign out
+                <LogOut className="h-4 w-4" /> {signingOut ? "Signing out…" : "Sign out"}
               </button>
             </div>
           )}

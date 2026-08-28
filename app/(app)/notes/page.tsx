@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { findNotesByOwner } from "@/lib/notes-repo";
+import { findNoteSummariesByOwner } from "@/lib/notes-repo";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/utils";
@@ -17,7 +17,7 @@ const sourceLabels: Record<string, string> = {
 
 export default async function NotesPage() {
   const user = await requireUser();
-  const notes = await findNotesByOwner(user.id);
+  const notes = await findNoteSummariesByOwner(user.id);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -51,7 +51,9 @@ export default async function NotesPage() {
                 <span className="text-xs text-ink-faint">{formatRelativeTime(note.updatedAt)}</span>
               </div>
               <p className="font-display text-base text-ink line-clamp-1">{note.title}</p>
-              <p className="mt-1 text-sm text-ink-soft line-clamp-2">{note.content.slice(0, 140)}</p>
+              <p className="mt-1 text-sm text-ink-soft line-clamp-2">
+                {note.description || note.originalFilename || "Open this note to view the lesson."}
+              </p>
             </Link>
           ))}
         </div>

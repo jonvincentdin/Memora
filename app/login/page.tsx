@@ -37,8 +37,7 @@ export default function LoginPage() {
       setError("That email and password don't match an account.");
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    router.replace("/dashboard");
   }
 
   return (

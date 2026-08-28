@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Cloud, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Provider = "google" | "notion";
-interface StatusResponse {
+export interface IntegrationStatusResponse {
   connections: Array<{ provider: Provider; metadata?: { email?: string; workspaceName?: string } | null }>;
   configured: Record<Provider, boolean>;
 }
 
-export function IntegrationConnections() {
-  const [data, setData] = useState<StatusResponse | null>(null);
+export function IntegrationConnections({ initialData }: { initialData: IntegrationStatusResponse }) {
+  const [data, setData] = useState<IntegrationStatusResponse>(initialData);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Provider | null>(null);
 
@@ -21,8 +21,6 @@ export function IntegrationConnections() {
     if (response.ok) setData(payload);
     else setError(payload?.error ?? "Couldn't load connections.");
   }
-
-  useEffect(() => { void load(); }, []);
 
   async function disconnect(provider: Provider) {
     setBusy(provider);
@@ -42,13 +40,13 @@ export function IntegrationConnections() {
       <p className="mb-4 text-sm text-ink-soft">Connect your own Drive or Notion workspace. Credentials are encrypted and available only to your Memora account.</p>
       <div className="space-y-3">
         {(["google", "notion"] as const).map((provider) => {
-          const connection = data?.connections.find((item) => item.provider === provider);
+          const connection = data.connections.find((item) => item.provider === provider);
           const label = provider === "google" ? "Google Drive" : "Notion";
           const detail = connection?.metadata?.email || connection?.metadata?.workspaceName;
           return (
             <div key={provider} className="card flex items-center justify-between gap-4 p-4">
-              <div><p className="text-sm font-semibold text-ink">{label}</p><p className="text-xs text-ink-soft">{connection ? detail || "Connected" : data?.configured[provider] === false ? "OAuth credentials need to be configured by the deployer." : "Not connected"}</p></div>
-              {connection ? <Button variant="outline" size="sm" loading={busy === provider} onClick={() => void disconnect(provider)}><Unlink className="h-3.5 w-3.5" /> Disconnect</Button> : <Button size="sm" disabled={!data?.configured[provider]} onClick={() => { window.location.href = `/api/integrations/${provider}/connect`; }}><Link2 className="h-3.5 w-3.5" /> Connect</Button>}
+              <div><p className="text-sm font-semibold text-ink">{label}</p><p className="text-xs text-ink-soft">{connection ? detail || "Connected" : data.configured[provider] === false ? "OAuth credentials need to be configured by the deployer." : "Not connected"}</p></div>
+              {connection ? <Button variant="outline" size="sm" loading={busy === provider} onClick={() => void disconnect(provider)}><Unlink className="h-3.5 w-3.5" /> Disconnect</Button> : <Button size="sm" disabled={!data.configured[provider]} onClick={() => { window.location.href = `/api/integrations/${provider}/connect`; }}><Link2 className="h-3.5 w-3.5" /> Connect</Button>}
             </div>
           );
         })}

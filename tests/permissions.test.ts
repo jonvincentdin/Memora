@@ -12,7 +12,22 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({ prisma: db }));
 
-import { revokeShare } from "@/lib/permissions";
+import { getAccessLevelForOwner, revokeShare } from "@/lib/permissions";
+
+describe("resource access fast path", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns owner access without a share lookup", async () => {
+    await expect(getAccessLevelForOwner("user-1", "NOTE", "note-1", "user-1")).resolves.toBe("OWNER");
+    expect(db.resourceShare.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("checks a share only for a non-owner", async () => {
+    db.resourceShare.findUnique.mockResolvedValue({ permission: "EDIT" });
+    await expect(getAccessLevelForOwner("user-2", "NOTE", "note-1", "user-1")).resolves.toBe("EDIT");
+    expect(db.resourceShare.findUnique).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("share revocation authorization", () => {
   beforeEach(() => {

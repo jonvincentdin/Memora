@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { ShareDialog } from "@/components/sharing/share-dialog";
 import { MarkdownEditor } from "@/components/markdown/editor";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
-import { exportMarkdownToPdf } from "@/lib/pdf-export";
 import { formatDate } from "@/lib/utils";
 
 interface NoteDetailProps {
@@ -44,15 +43,18 @@ export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
     setSaving(false);
     if (res.ok) {
       setSaved(true);
-      router.refresh();
       setTimeout(() => setSaved(false), 2000);
     }
   }
 
   async function handleDelete() {
     await fetch(`/api/notes/${note.id}`, { method: "DELETE" });
-    router.push("/notes");
-    router.refresh();
+    router.replace("/notes");
+  }
+
+  async function handlePdfExport() {
+    const { exportMarkdownToPdf } = await import("@/lib/pdf-export");
+    exportMarkdownToPdf(note.title, content);
   }
 
   return (
@@ -67,7 +69,7 @@ export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
           <Button variant="outline" size="sm" onClick={() => window.open(`/api/notes/export?id=${note.id}&format=md`, "_blank")}>
             <Download className="h-3.5 w-3.5" /> MD
           </Button>
-          <Button variant="outline" size="sm" onClick={() => exportMarkdownToPdf(note.title, content)}>
+          <Button variant="outline" size="sm" onClick={() => void handlePdfExport()}>
             <FileText className="h-3.5 w-3.5" /> PDF
           </Button>
           <Button variant="secondary" size="sm" onClick={() => router.push(`/reviewers?fromNote=${note.id}`)}>

@@ -46,11 +46,10 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.error) {
-        router.push("/login");
+        router.replace("/login");
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      router.replace("/dashboard");
     } catch {
       setError("We couldn't reach the server. Try again in a moment.");
       setLoading(false);

@@ -19,12 +19,12 @@ export default async function DashboardPage() {
   const [recentNotes, recentReviewers, recentQuizzes, recentAttempts, noteCount, quizAttemptCount] = await Promise.all([
     prisma.note.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
     prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
-    prisma.quiz.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4 }),
+    prisma.quiz.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
     prisma.quizAttempt.findMany({
       where: { userId: user.id, completedAt: { not: null } },
       orderBy: { completedAt: "desc" },
       take: 4,
-      include: { quiz: { select: { title: true } } },
+      select: { score: true, totalQuestions: true },
     }),
     prisma.note.count({ where: { ownerId: user.id } }),
     prisma.quizAttempt.count({ where: { userId: user.id, completedAt: { not: null } } }),

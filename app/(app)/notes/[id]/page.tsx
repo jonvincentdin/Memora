@@ -1,17 +1,16 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
-import { getAccessLevel } from "@/lib/permissions";
+import { getAccessLevelForOwner } from "@/lib/permissions";
 import { NoteDetail } from "@/components/notes/note-detail";
 import { findNoteById } from "@/lib/notes-repo";
 
 export default async function NoteDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const user = await requireUser();
-  const access = await getAccessLevel(user.id, "NOTE", params.id);
-  if (access === "NONE") notFound();
-
   const note = await findNoteById(params.id);
   if (!note) notFound();
+  const access = await getAccessLevelForOwner(user.id, "NOTE", params.id, note.ownerId);
+  if (access === "NONE") notFound();
 
   return (
     <NoteDetail
