@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Plus, X } from "lucide-react";
+import { Copy, Check, Plus, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
@@ -75,6 +75,31 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
     navigator.clipboard.writeText(prompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function generateWithConnectedAi() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(payload?.error ?? "AI generation failed.");
+        return;
+      }
+      const cleaned = stripCodeFences(payload.text);
+      setPastedMarkdown(cleaned);
+      setTitle(extractTitleFromMarkdown(cleaned));
+      setStep(4);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "AI generation failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const cleanedMarkdown = stripCodeFences(pastedMarkdown);
@@ -196,6 +221,9 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
           <div className="mt-3 flex justify-between">
             <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
             <div className="flex gap-2">
+              <Button onClick={() => void generateWithConnectedAi()} loading={loading}>
+                <Sparkles className="h-4 w-4" /> Generate here
+              </Button>
               <Button variant="outline" onClick={copyPrompt}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy prompt"}
               </Button>

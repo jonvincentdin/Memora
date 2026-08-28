@@ -11,6 +11,7 @@ interface ShareRow {
   id: string;
   permission: "VIEW" | "EDIT";
   user: { id: string; name: string; email: string };
+  pending?: boolean;
 }
 
 export function ShareDialog({ resourceType, resourceId }: { resourceType: "NOTE" | "REVIEWER" | "QUIZ"; resourceId: string }) {
@@ -56,11 +57,11 @@ export function ShareDialog({ resourceType, resourceId }: { resourceType: "NOTE"
     }
   }
 
-  async function handleRevoke(shareId: string) {
+  async function handleRevoke(shareId: string, pending = false) {
     await fetch("/api/share", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resourceType, resourceId, shareId }),
+      body: JSON.stringify({ resourceType, resourceId, shareId, pending }),
     });
     setShares((prev) => prev.filter((s) => s.id !== shareId));
   }
@@ -104,9 +105,9 @@ export function ShareDialog({ resourceType, resourceId }: { resourceType: "NOTE"
                   <div key={s.id} className="flex items-center justify-between text-sm">
                     <div className="min-w-0">
                       <p className="truncate text-ink">{s.user.name || s.user.email}</p>
-                      <Badge tone={s.permission === "EDIT" ? "accent" : "neutral"}>{s.permission}</Badge>
+                      <Badge tone={s.permission === "EDIT" ? "accent" : "neutral"}>{s.pending ? "PENDING" : s.permission}</Badge>
                     </div>
-                    <button onClick={() => handleRevoke(s.id)} className="text-ink-faint hover:text-danger">
+                    <button onClick={() => handleRevoke(s.id, s.pending)} className="text-ink-faint hover:text-danger">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>

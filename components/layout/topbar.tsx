@@ -15,7 +15,7 @@ export function Topbar({ userName }: { userName: string }) {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) router.push(`/dashboard?search=${encodeURIComponent(query.trim())}`);
+    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   }
 
   return (

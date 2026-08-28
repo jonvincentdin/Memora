@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUserOrNull } from "@/lib/auth/session";
-import { importNotionPage, NotionImportError } from "@/lib/imports/notion-import";
+import { extractNotionPageId, importNotionPage, NotionImportError } from "@/lib/imports/notion-import";
 import { getAccessToken } from "@/lib/integrations/repository";
-import { createNote } from "@/lib/notes-repo";
+import { syncConnectedNote } from "@/lib/notes-repo";
 import { withApiErrorHandling } from "@/lib/api/handler";
 
 // POST { url: string } — imports exactly the one Notion page the URL points
@@ -23,23 +23,24 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   try {
     const { title, content, hasImages } = await importNotionPage(url, accessToken);
-    const note = await createNote({
+    const { note, refreshed } = await syncConnectedNote({
       ownerId: user.id,
       title,
       originalFilename: url,
       sourceType: "NOTION",
+      sourceExternalId: extractNotionPageId(url),
       sourceUrl: url,
       content,
     });
     return NextResponse.json(
       {
         note,
-        status: "complete",
+        status: refreshed ? "refreshed" : "complete",
         notice: hasImages
           ? "This page contained images. Memora only imports text, so any images were skipped — only the written content came through."
           : undefined,
       },
-      { status: 201 }
+      { status: refreshed ? 200 : 201 }
     );
   } catch (err) {
     if (err instanceof NotionImportError) {

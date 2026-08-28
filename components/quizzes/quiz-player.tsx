@@ -13,43 +13,76 @@ interface QuizPlayerProps {
   quizId: string;
   title: string;
   questions: QuizQuestion[];
-  timeLimitMinutes?: number;
-  randomize: boolean;
   testMode: "review" | "exam";
+  showExplanations: boolean;
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMinutes, randomize, testMode }: QuizPlayerProps) {
+export function QuizPlayer({ quizId, title, questions: rawQuestions, testMode, showExplanations }: QuizPlayerProps) {
   const router = useRouter();
-  const questions = useMemo(() => (randomize ? shuffle(rawQuestions) : rawQuestions), [rawQuestions, randomize]);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [questionOrder, setQuestionOrder] = useState<string[]>([]);
+  const [deadline, setDeadline] = useState<string | null>(null);
+  const [starting, setStarting] = useState(true);
+  const questions = useMemo(() => {
+    if (questionOrder.length === 0) return rawQuestions;
+    const byId = new Map(rawQuestions.map((question) => [question.id, question]));
+    return questionOrder.map((id) => byId.get(id)).filter((question): question is QuizQuestion => Boolean(question));
+  }, [questionOrder, rawQuestions]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [secondsLeft, setSecondsLeft] = useState(timeLimitMinutes ? timeLimitMinutes * 60 : null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   const question = questions[index];
 
   useEffect(() => {
-    if (secondsLeft === null) return;
-    if (secondsLeft <= 0) {
-      handleSubmit();
-      return;
-    }
-    const t = setTimeout(() => setSecondsLeft((s) => (s !== null ? s - 1 : null)), 1000);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    fetch(`/api/quizzes/${quizId}/attempts/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testMode }),
+    }).then(async (response) => ({ ok: response.ok, data: await response.json().catch(() => null) }))
+      .then(({ ok, data }) => {
+        if (cancelled) return;
+        if (!ok || !data?.attempt) { setSubmitError(data?.error ?? "Couldn't start this attempt."); setStarting(false); return; }
+        setAttemptId(data.attempt.id);
+        setQuestionOrder(Array.isArray(data.attempt.questionOrder) ? data.attempt.questionOrder : []);
+        setAnswers(data.attempt.answers && typeof data.attempt.answers === "object" ? data.attempt.answers : {});
+        setFlagged(new Set(Array.isArray(data.attempt.flagged) ? data.attempt.flagged : []));
+        setDeadline(data.attempt.deadline ?? null);
+        setStarting(false);
+      }).catch(() => { if (!cancelled) { setSubmitError("We couldn't reach the server."); setStarting(false); } });
+    return () => { cancelled = true; };
+  }, [quizId, testMode]);
+
+  useEffect(() => {
+    if (!deadline) { setSecondsLeft(null); return; }
+    const update = () => setSecondsLeft(Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 1000)));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [deadline]);
+
+  useEffect(() => {
+    if (!attemptId || starting) return;
+    const timer = window.setTimeout(() => {
+      void fetch(`/api/quizzes/${quizId}/attempts/${attemptId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, flagged: Array.from(flagged) }),
+      });
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [answers, attemptId, flagged, quizId, starting]);
+
+  useEffect(() => {
+    if (secondsLeft === 0 && attemptId && !submitting) void handleSubmit();
+    // handleSubmit intentionally uses the latest rendered answers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft]);
+  }, [secondsLeft, attemptId]);
 
   function setAnswer(value: unknown) {
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
@@ -70,13 +103,14 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
   }
 
   async function handleSubmit() {
+    if (!attemptId || submitting) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await fetch(`/api/quizzes/${quizId}/attempts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, flagged: Array.from(flagged) }),
+        body: JSON.stringify({ attemptId, answers, flagged: Array.from(flagged) }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.attempt?.id) {
@@ -93,6 +127,9 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
   const answeredCount = Object.keys(answers).length;
   const minutes = secondsLeft !== null ? Math.floor(secondsLeft / 60) : null;
   const seconds = secondsLeft !== null ? secondsLeft % 60 : null;
+
+  if (starting) return <div className="mx-auto max-w-2xl"><div className="card h-40 animate-pulse bg-ink/[0.03]" /><p className="mt-3 text-sm text-ink-faint">Starting your attempt…</p></div>;
+  if (!attemptId) return <div className="mx-auto max-w-2xl"><p className="text-sm text-danger">{submitError ?? "Couldn't start this attempt."}</p></div>;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -124,6 +161,7 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
             <Flag className={cn("h-4 w-4", flagged.has(question.id) ? "fill-accent text-accent-dark" : "text-ink-faint")} />
           </button>
         </div>
+        {question.sourceSection && <p className="-mt-2 mb-4 text-xs text-ink-faint">Source: {question.sourceSection}</p>}
 
         <QuestionInput question={question} value={answers[question.id]} onChange={setAnswer} />
 
@@ -151,7 +189,7 @@ export function QuizPlayer({ quizId, title, questions: rawQuestions, timeLimitMi
                   {isAnswerCorrect(question, answers[question.id]) ? "Correct" : "Not quite"}
                 </p>
                 <p className="mt-2 text-ink"><strong>Correct answer:</strong> {formatCorrectAnswer(question)}</p>
-                <p className="mt-1 text-ink-soft"><strong>Explanation:</strong> {question.explanation || "No detailed explanation was provided."}</p>
+                {showExplanations && <p className="mt-1 text-ink-soft"><strong>Explanation:</strong> {question.explanation || "No detailed explanation was provided."}</p>}
               </div>
             )}
           </div>

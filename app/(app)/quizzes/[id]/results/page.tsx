@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { getAccessLevelForOwner } from "@/lib/permissions";
 import type { QuizQuestion } from "@/lib/validation/quiz";
+import { formatCorrectAnswer } from "@/lib/quiz-grading";
 
 export default async function QuizResultsPage(
   props: {
@@ -30,7 +31,10 @@ export default async function QuizResultsPage(
   if (access === "NONE") notFound();
   if (!attempt) notFound();
 
-  const questions = quiz.questions as unknown as QuizQuestion[];
+  const rawQuestions = quiz.questions as unknown as QuizQuestion[];
+  const order = Array.isArray(attempt.questionOrder) ? attempt.questionOrder as string[] : [];
+  const byId = new Map(rawQuestions.map((question) => [question.id, question]));
+  const questions = order.length ? order.map((id) => byId.get(id)).filter((question): question is QuizQuestion => Boolean(question)) : rawQuestions;
   const gradedAnswers = attempt.answers as Record<string, { given: unknown; correct: boolean }>;
   const percentage = Math.round((attempt.score / Math.max(attempt.totalQuestions, 1)) * 100);
 
@@ -75,7 +79,9 @@ export default async function QuizResultsPage(
                       Your answer: {formatGiven(graded?.given)}
                     </p>
                   )}
+                  <p className="mt-1 text-xs text-ink"><strong>Correct answer:</strong> {formatCorrectAnswer(q)}</p>
                   {q.explanation && <p className="mt-1.5 text-sm text-ink-soft">{q.explanation}</p>}
+                  {q.sourceSection && <p className="mt-2 text-xs text-ink-faint">Source: {q.sourceSection}</p>}
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { canView, canEdit, isOwner, deleteSharesForResource } from "@/lib/permis
 import { prisma } from "@/lib/db";
 import { findNoteById, updateNote } from "@/lib/notes-repo";
 import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
+import { createResourceRevision } from "@/lib/revisions";
 
 export const GET = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
   const params = await context.params;
@@ -34,6 +35,9 @@ export const PATCH = withApiErrorHandling(async (request: Request, context: Rout
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid update." }, { status: 400 });
   }
 
+  const current = await findNoteById(params.id);
+  if (!current) return NextResponse.json({ error: "Note not found." }, { status: 404 });
+  await createResourceRevision({ ownerId: current.ownerId, resourceType: "NOTE", resourceId: current.id, snapshot: { title: current.title, description: current.description ?? null, content: current.content }, autosave: request.headers.get("x-memora-autosave") === "1" });
   const note = await updateNote(params.id, parsed.data);
 
   return NextResponse.json({ note });

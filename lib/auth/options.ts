@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
           isRateLimited(`login:${normalizedEmail}`),
           prisma.user.findUnique({
             where: { email: normalizedEmail },
-            select: { id: true, name: true, email: true, image: true, passwordHash: true },
+            select: { id: true, name: true, email: true, image: true, passwordHash: true, emailVerified: true },
           }),
         ]);
         if (limited) {
@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
         // against a dummy hash when there's no user) so response time
         // doesn't reveal whether the email is registered.
         const passwordValid = await bcrypt.compare(credentials.password, user?.passwordHash ?? DUMMY_HASH);
-        if (!user || !passwordValid) {
+        if (!user || !passwordValid || !user.emailVerified) {
           return null;
         }
 

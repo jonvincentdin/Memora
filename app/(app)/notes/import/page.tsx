@@ -38,6 +38,7 @@ export default function ImportNotePage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("file");
   const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState("");
   const [title, setTitle] = useState("");
   const [pastedContent, setPastedContent] = useState("");
@@ -56,7 +57,7 @@ export default function ImportNotePage() {
     setNotice(null);
     setStatus("processing");
     const form = new FormData();
-    form.append("file", file);
+    for (const selected of files.length ? files : [file]) form.append("file", selected);
 
     try {
       const res = await fetch("/api/notes/import", { method: "POST", body: form });
@@ -71,7 +72,9 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      if (data.errors?.length) setNotice(`${data.notes?.length ?? 0} imported; ${data.errors.length} failed. ${data.errors[0].error}`);
+      if (data.notes?.length > 1) router.push("/notes");
+      else router.push(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -224,7 +227,7 @@ export default function ImportNotePage() {
       <div className="card mt-4 p-6">
         {tab === "file" ? (
           <>
-            <FileDropzone onFileSelected={setFile} accept=".md,.txt,.pdf,.docx,.json" />
+            <FileDropzone onFileSelected={setFile} onFilesSelected={setFiles} multiple accept=".md,.txt,.pdf,.docx,.json" />
             <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-faint">
               <FileText className="h-3.5 w-3.5" /> Supports .md, .txt, .pdf, .docx, and Memora&apos;s own exported .json files
             </p>

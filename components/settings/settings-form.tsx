@@ -9,6 +9,7 @@ interface Settings {
   appearance: "LIGHT" | "DARK" | "SYSTEM";
   defaultQuestionCount: number;
   defaultDifficulty: "EASY" | "NORMAL" | "HARD" | "MIXED";
+  defaultQuizMode: "QUIZ" | "PRACTICE_EXAM" | "MOCK_EXAM" | "TIMED_EXAM" | "MASTERY_TEST";
   showExplanations: boolean;
   autoSave: boolean;
 }
@@ -94,6 +95,12 @@ export function SettingsForm({ initial }: { initial: Settings }) {
               }}
               className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm"
             />
+          </div>
+          <div>
+            <Label htmlFor="default-mode">Default test type</Label>
+            <select id="default-mode" value={settings.defaultQuizMode} onChange={(e) => save({ defaultQuizMode: e.target.value as Settings["defaultQuizMode"] })} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">
+              <option value="QUIZ">Quiz</option><option value="PRACTICE_EXAM">Practice exam</option><option value="MOCK_EXAM">Mock exam</option><option value="TIMED_EXAM">Timed exam</option><option value="MASTERY_TEST">Mastery test</option>
+            </select>
           </div>
           <div>
             <Label htmlFor="difficulty">Default difficulty</Label>

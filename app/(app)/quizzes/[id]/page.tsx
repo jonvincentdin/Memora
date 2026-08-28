@@ -10,6 +10,8 @@ import { ShareDialog } from "@/components/sharing/share-dialog";
 import { ExportQuizPdfButton } from "@/components/quizzes/export-quiz-pdf-button";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/validation/quiz";
+import { ResourceActions } from "@/components/library/resource-actions";
+import { TagEditor } from "@/components/library/tag-editor";
 
 export default async function QuizDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -48,11 +50,13 @@ export default async function QuizDetailPage(props: { params: Promise<{ id: stri
             mode={quiz.mode}
           />
           {access === "OWNER" && <ShareDialog resourceType="QUIZ" resourceId={quiz.id} />}
+          {access === "OWNER" && <ResourceActions resourceType="QUIZ" resourceId={quiz.id} archived={Boolean(quiz.archivedAt)} favorite={quiz.isFavorite} />}
           {access === "OWNER" && <DeleteQuizButton quizId={quiz.id} />}
         </div>
       </div>
 
       <h1 className="font-display text-2xl text-ink">{quiz.title}</h1>
+      {access === "OWNER" && <TagEditor resourceType="QUIZ" resourceId={quiz.id} />}
       {quiz.description && <p className="mt-1 text-ink-soft">{quiz.description}</p>}
       <p className="mt-1 text-xs text-ink-faint">{questionCount} questions · updated {formatDate(quiz.updatedAt)}</p>
 

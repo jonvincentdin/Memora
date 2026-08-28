@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Download, FileText, Pencil } from "lucide-react";
@@ -12,6 +12,9 @@ import { MarkdownEditor } from "@/components/markdown/editor";
 import { ShareDialog } from "@/components/sharing/share-dialog";
 import { DeleteReviewerButton } from "@/components/reviewers/delete-reviewer-button";
 import { formatDate } from "@/lib/utils";
+import { ResourceActions } from "@/components/library/resource-actions";
+import { TagEditor } from "@/components/library/tag-editor";
+import { RevisionHistory } from "@/components/library/revision-history";
 
 interface ReviewerDetailProps {
   reviewer: {
@@ -22,16 +25,33 @@ interface ReviewerDetailProps {
     content: string;
     updatedAt: string;
     noteCount: number;
+    archived: boolean;
+    favorite: boolean;
   };
   isOwner: boolean;
+  autoSave: boolean;
 }
 
-export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
+export function ReviewerDetail({ reviewer, isOwner, autoSave }: ReviewerDetailProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(reviewer.title);
   const [content, setContent] = useState(reviewer.content);
   const [saving, setSaving] = useState(false);
+  const lastSaved = useRef(`${reviewer.title}\u0000${reviewer.content}`);
+
+  useEffect(() => {
+    if (!editing || !autoSave || !isOwner) return;
+    const signature = `${title}\u0000${content}`;
+    if (signature === lastSaved.current) return;
+    const timer = window.setTimeout(async () => {
+      setSaving(true);
+      const response = await fetch(`/api/reviewers/${reviewer.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Memora-Autosave": "1" }, body: JSON.stringify({ title, content }) });
+      setSaving(false);
+      if (response.ok) lastSaved.current = signature;
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [autoSave, content, editing, isOwner, reviewer.id, title]);
 
   async function handleSave() {
     setSaving(true);
@@ -42,6 +62,7 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
     });
     setSaving(false);
     if (res.ok) {
+      lastSaved.current = `${title}\u0000${content}`;
       setEditing(false);
     }
   }
@@ -81,6 +102,8 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
             </Button>
           )}
           {isOwner && <ShareDialog resourceType="REVIEWER" resourceId={reviewer.id} />}
+          {isOwner && <ResourceActions resourceType="REVIEWER" resourceId={reviewer.id} archived={reviewer.archived} favorite={reviewer.favorite} />}
+          {isOwner && <RevisionHistory resourceType="REVIEWER" resourceId={reviewer.id} />}
           {isOwner && <DeleteReviewerButton reviewerId={reviewer.id} />}
         </div>
       </div>
@@ -99,6 +122,7 @@ export function ReviewerDetail({ reviewer, isOwner }: ReviewerDetailProps) {
       ) : (
         <>
           <h1 className="font-display text-2xl text-ink">{title}</h1>
+          {isOwner && <TagEditor resourceType="REVIEWER" resourceId={reviewer.id} />}
           {reviewer.description && <p className="mt-1 text-ink-soft">{reviewer.description}</p>}
           <p className="mt-1 text-xs text-ink-faint">
             Last updated {formatDate(reviewer.updatedAt)}

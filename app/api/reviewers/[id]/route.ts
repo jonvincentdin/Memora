@@ -5,6 +5,7 @@ import { updateReviewerSchema } from "@/lib/validation/reviewer";
 import { canView, canEdit, isOwner, deleteSharesForResource } from "@/lib/permissions";
 import { findReviewerById, updateReviewer } from "@/lib/reviewers-repo";
 import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
+import { createResourceRevision } from "@/lib/revisions";
 
 export const GET = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
   const params = await context.params;
@@ -36,6 +37,9 @@ export const PATCH = withApiErrorHandling(async (request: Request, context: Rout
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid update." }, { status: 400 });
   }
 
+  const current = await findReviewerById(params.id);
+  if (!current) return NextResponse.json({ error: "Reviewer not found." }, { status: 404 });
+  await createResourceRevision({ ownerId: current.ownerId, resourceType: "REVIEWER", resourceId: current.id, snapshot: { title: current.title, description: current.description ?? null, content: current.content }, autosave: request.headers.get("x-memora-autosave") === "1" });
   const reviewer = await updateReviewer(params.id, parsed.data);
   return NextResponse.json({ reviewer });
 });

@@ -6,13 +6,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { ReviewerWizardLauncher } from "@/components/reviewers/reviewer-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
+import { LibraryNavigation } from "@/components/library/library-navigation";
 
-export default async function ReviewersPage(props: { searchParams: Promise<{ fromNote?: string }> }) {
+export default async function ReviewersPage(props: { searchParams: Promise<{ fromNote?: string; view?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
+  const archived = searchParams.view === "archived";
+  const page = Math.max(1, Number(searchParams.page) || 1);
   const [reviewers, notes] = await Promise.all([
-    prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true, description: true, style: true, updatedAt: true } }),
-    prisma.note.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: archived ? { not: null } : null }, orderBy: { updatedAt: "desc" }, skip: (page - 1) * 24, take: 24, select: { id: true, title: true, description: true, style: true, updatedAt: true, isFavorite: true } }),
+    prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
   ]);
 
   return (
@@ -24,6 +27,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
         </div>
         <ReviewerWizardLauncher notes={notes} defaultNoteId={searchParams.fromNote} />
       </div>
+      <LibraryNavigation basePath="/reviewers" archived={archived} page={page} hasNext={reviewers.length === 24} />
 
       {reviewers.length === 0 ? (
         <EmptyState
@@ -42,6 +46,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
                 <span className="text-xs text-ink-faint">{formatRelativeTime(r.updatedAt)}</span>
               </div>
               <p className="font-display text-base text-ink line-clamp-1">{r.title}</p>
+              {r.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
               {r.description && <p className="mt-1 text-sm text-ink-soft line-clamp-2">{r.description}</p>}
             </Link>
           ))}
