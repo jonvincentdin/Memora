@@ -3,6 +3,9 @@ import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 import { guestRateLimit } from "@/lib/guest-rate-limit";
 import { addFeedback } from "@/lib/share-collections-repo";
 import { z } from "zod";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
+import { collectionAccessCookieName, validCollectionAccessToken } from "@/lib/collections/access";
 
 const feedbackSchema = z.object({
   authorName: z.string().max(80).optional(),
@@ -17,6 +20,14 @@ export const POST = withApiErrorHandling(async (request: Request, context: Route
   const params = await context.params;
   const limited = await guestRateLimit(request);
   if (limited) return limited;
+
+  const gate = await prisma.shareCollection.findUnique({ where: { slug: params.slug }, select: { passwordHash: true } });
+  if (gate?.passwordHash) {
+    const cookieStore = await cookies();
+    if (!validCollectionAccessToken(params.slug, cookieStore.get(collectionAccessCookieName(params.slug))?.value)) {
+      return NextResponse.json({ error: "Unlock this collection before leaving feedback." }, { status: 401 });
+    }
+  }
 
   const body = await request.json().catch(() => null);
   const parsed = feedbackSchema.safeParse(body);

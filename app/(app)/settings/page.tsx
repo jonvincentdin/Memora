@@ -4,12 +4,16 @@ import { SettingsForm } from "@/components/settings/settings-form";
 import { IntegrationConnections } from "@/components/settings/integration-connections";
 import { connectionStatuses } from "@/lib/integrations/repository";
 import { isProviderConfigured } from "@/lib/integrations/config";
+import { AccountSettings } from "@/components/settings/account-settings";
+import { AiConnections } from "@/components/settings/ai-connections";
+import { DEFAULT_AI_MODELS } from "@/lib/ai/providers";
 
 export default async function SettingsPage() {
   const user = await requireUser();
-  const [settings, connections] = await Promise.all([
+  const [settings, connections, aiConnections] = await Promise.all([
     prisma.userSettings.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} }),
     connectionStatuses(user.id),
+    prisma.aiConnection.findMany({ where: { userId: user.id }, select: { provider: true, model: true, updatedAt: true }, orderBy: { provider: "asc" } }),
   ]);
 
   return (
@@ -23,6 +27,7 @@ export default async function SettingsPage() {
             appearance: settings.appearance,
             defaultQuestionCount: settings.defaultQuestionCount,
             defaultDifficulty: settings.defaultDifficulty,
+            defaultQuizMode: settings.defaultQuizMode,
             showExplanations: settings.showExplanations,
             autoSave: settings.autoSave,
           }}
@@ -34,6 +39,8 @@ export default async function SettingsPage() {
           configured: { google: isProviderConfigured("google"), notion: isProviderConfigured("notion") },
         }}
       />
+      <AiConnections initialConnections={aiConnections} defaults={DEFAULT_AI_MODELS} />
+      <AccountSettings initial={{ name: user.name ?? "", email: user.email ?? "" }} />
     </div>
   );
 }

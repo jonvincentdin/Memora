@@ -6,18 +6,24 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { QuizWizardLauncher } from "@/components/quizzes/quiz-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
+import { LibraryNavigation } from "@/components/library/library-navigation";
 
-export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string }> }) {
+export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string; view?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
-  const [quizzes, notes, reviewers] = await Promise.all([
+  const archived = searchParams.view === "archived";
+  const page = Math.max(1, Number(searchParams.page) || 1);
+  const [quizzes, notes, reviewers, settings] = await Promise.all([
     prisma.quiz.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: user.id, archivedAt: archived ? { not: null } : null },
       orderBy: { updatedAt: "desc" },
-      select: { id: true, title: true, mode: true, questions: true, updatedAt: true },
+      skip: (page - 1) * 24,
+      take: 24,
+      select: { id: true, title: true, mode: true, questions: true, updatedAt: true, isFavorite: true },
     }),
-    prisma.note.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
-    prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.userSettings.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {}, select: { defaultQuestionCount: true, defaultDifficulty: true, defaultQuizMode: true } }),
   ]);
 
   return (
@@ -27,8 +33,9 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ fromR
           <h1 className="font-display text-2xl text-ink">Quizzes</h1>
           <p className="mt-1 text-sm text-ink-soft">Test yourself with questions built from your own material.</p>
         </div>
-        <QuizWizardLauncher notes={notes} reviewers={reviewers} defaultReviewerId={searchParams.fromReviewer} />
+        <QuizWizardLauncher notes={notes} reviewers={reviewers} defaultReviewerId={searchParams.fromReviewer} defaults={{ questionCount: settings.defaultQuestionCount, difficulty: settings.defaultDifficulty, mode: settings.defaultQuizMode }} />
       </div>
+      <LibraryNavigation basePath="/quizzes" archived={archived} page={page} hasNext={quizzes.length === 24} />
 
       {quizzes.length === 0 ? (
         <EmptyState
@@ -49,6 +56,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ fromR
                   <span className="text-xs text-ink-faint">{formatRelativeTime(q.updatedAt)}</span>
                 </div>
                 <p className="font-display text-base text-ink line-clamp-1">{q.title}</p>
+                {q.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
                 <p className="mt-1 text-sm text-ink-soft">{questionCount} question{questionCount !== 1 ? "s" : ""}</p>
               </Link>
             );

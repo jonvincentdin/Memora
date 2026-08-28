@@ -14,25 +14,57 @@ datasource db {
 // Users
 // ---------------------------------------------------------------------------
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  passwordHash  String
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  image             String?
+  emailVerified     DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  notes         Note[]
-  reviewers     Reviewer[]
-  quizzes       Quiz[]
-  quizAttempts  QuizAttempt[]
-  sharesGiven   ResourceShare[] @relation("SharesGivenByOwner")
-  sharesGranted ResourceShare[] @relation("SharesGrantedToUser")
-  settings      UserSettings?
-  collections   ShareCollection[]
-  integrations IntegrationConnection[]
+  notes             Note[]
+  reviewers         Reviewer[]
+  quizzes           Quiz[]
+  quizAttempts      QuizAttempt[]
+  sharesGiven       ResourceShare[]         @relation("SharesGivenByOwner")
+  sharesGranted     ResourceShare[]         @relation("SharesGrantedToUser")
+  settings          UserSettings?
+  collections       ShareCollection[]
+  integrations      IntegrationConnection[]
+  accountTokens     AccountToken[]
+  flashcards        Flashcard[]
+  flashcardProgress FlashcardProgress[]
+  flashcardReviews  FlashcardReview[]
+  studySessions     StudySession[]
+  tags              Tag[]
+  revisions         ResourceRevision[]
+  notifications     Notification[]
+  aiConnections     AiConnection[]
+  invitesGiven      ResourceInvite[] @relation("ResourceInvitesGiven")
 
   @@map("users")
+}
+
+enum AccountTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model AccountToken {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AccountTokenType
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("account_tokens")
 }
 
 model IntegrationConnection {
@@ -57,17 +89,38 @@ enum IntegrationProvider {
   NOTION
 }
 
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+}
+
+model AiConnection {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  AiProvider
+  apiKey    Bytes
+  model     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("ai_connections")
+}
+
 model UserSettings {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appearance            Appearance @default(SYSTEM)
-  defaultQuestionCount  Int      @default(10)
-  defaultDifficulty     Difficulty @default(MIXED)
-  defaultQuizMode       QuizMode @default(QUIZ)
-  showExplanations      Boolean  @default(true)
-  autoSave              Boolean  @default(true)
-  updatedAt             DateTime @updatedAt
+  id                   String     @id @default(cuid())
+  userId               String     @unique
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appearance           Appearance @default(SYSTEM)
+  defaultQuestionCount Int        @default(10)
+  defaultDifficulty    Difficulty @default(MIXED)
+  defaultQuizMode      QuizMode   @default(QUIZ)
+  showExplanations     Boolean    @default(true)
+  autoSave             Boolean    @default(true)
+  updatedAt            DateTime   @updatedAt
 
   @@map("user_settings")
 }
@@ -82,22 +135,28 @@ enum Appearance {
 // Notes
 // ---------------------------------------------------------------------------
 model Note {
-  id                String   @id @default(cuid())
-  ownerId           String
-  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  title             String
-  description       String?
-  originalFilename  String?
-  sourceType        NoteSourceType
-  sourceUrl         String?
-  content           Bytes    // gzip-compressed Markdown — see lib/compression.ts / lib/notes-repo.ts
-  fileExtension     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String         @id @default(cuid())
+  ownerId          String
+  owner            User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  originalFilename String?
+  sourceType       NoteSourceType
+  sourceUrl        String?
+  content          Bytes // gzip-compressed Markdown — see lib/compression.ts / lib/notes-repo.ts
+  fileExtension    String?
+  sourceExternalId String?
+  sourceSyncedAt   DateTime?
+  archivedAt       DateTime?
+  isFavorite       Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  reviewerLinks     ReviewerNote[]
+  reviewerLinks ReviewerNote[]
+  tags          NoteTag[]
 
-  @@index([ownerId])
+  @@index([ownerId, archivedAt, updatedAt])
+  @@unique([ownerId, sourceType, sourceExternalId])
   @@map("notes")
 }
 
@@ -115,20 +174,24 @@ enum NoteSourceType {
 // Reviewers
 // ---------------------------------------------------------------------------
 model Reviewer {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   title       String
   description String?
   style       ReviewerStyle @default(COMPLETE)
-  content     Bytes    // gzip-compressed Markdown — see lib/compression.ts / lib/reviewers-repo.ts
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  content     Bytes // gzip-compressed Markdown — see lib/compression.ts / lib/reviewers-repo.ts
+  archivedAt  DateTime?
+  isFavorite  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  noteLinks   ReviewerNote[]
-  quizLinks   QuizReviewer[]
+  noteLinks  ReviewerNote[]
+  quizLinks  QuizReviewer[]
+  flashcards Flashcard[]
+  tags       ReviewerTag[]
 
-  @@index([ownerId])
+  @@index([ownerId, archivedAt, updatedAt])
   @@map("reviewers")
 }
 
@@ -157,21 +220,24 @@ model ReviewerNote {
 // Quizzes
 // ---------------------------------------------------------------------------
 model Quiz {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   ownerId       String
-  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   title         String
   description   String?
-  mode          QuizMode @default(QUIZ)
-  configuration Json     // question count, difficulty, distribution, randomization, timing, attempts
-  questions     Json     // validated array of Memora quiz question objects
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  mode          QuizMode  @default(QUIZ)
+  configuration Json // question count, difficulty, distribution, randomization, timing, attempts
+  questions     Json // validated array of Memora quiz question objects
+  archivedAt    DateTime?
+  isFavorite    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   reviewerLinks QuizReviewer[]
   attempts      QuizAttempt[]
+  tags          QuizTag[]
 
-  @@index([ownerId])
+  @@index([ownerId, archivedAt, updatedAt])
   @@map("quizzes")
 }
 
@@ -201,20 +267,182 @@ model QuizReviewer {
 }
 
 model QuizAttempt {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizId        String
-  quiz          Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  score         Int
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId         String
+  quiz           Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score          Int           @default(0)
   totalQuestions Int
-  answers       Json      // per-question answers, correctness, flags
-  startedAt     DateTime  @default(now())
-  completedAt   DateTime?
+  answers        Json          @default("{}") // draft answers while active; graded answers after completion
+  flagged        Json          @default("[]")
+  questionOrder  Json          @default("[]")
+  testMode       TestMode      @default(EXAM)
+  status         AttemptStatus @default(IN_PROGRESS)
+  deadline       DateTime?
+  startedAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  completedAt    DateTime?
 
-  @@index([userId])
-  @@index([quizId])
+  @@index([userId, status, startedAt])
+  @@index([quizId, userId, status])
   @@map("quiz_attempts")
+}
+
+enum TestMode {
+  REVIEW
+  EXAM
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+// ---------------------------------------------------------------------------
+// Structured study / spaced repetition
+// ---------------------------------------------------------------------------
+model Flashcard {
+  id         String              @id @default(cuid())
+  ownerId    String
+  owner      User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  reviewerId String?
+  reviewer   Reviewer?           @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+  front      String
+  back       String
+  sourceText String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  progress   FlashcardProgress[]
+  reviews    FlashcardReview[]
+
+  @@index([ownerId, updatedAt])
+  @@index([reviewerId])
+  @@map("flashcards")
+}
+
+model FlashcardProgress {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcardId  String
+  flashcard    Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  dueAt        DateTime  @default(now())
+  intervalDays Float     @default(0)
+  easeFactor   Float     @default(2.5)
+  repetitions  Int       @default(0)
+  lapses       Int       @default(0)
+  lastGrade    Int?
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, flashcardId])
+  @@index([userId, dueAt])
+  @@map("flashcard_progress")
+}
+
+model FlashcardReview {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcardId String
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  grade       Int
+  reviewedAt  DateTime  @default(now())
+
+  @@index([userId, reviewedAt])
+  @@index([flashcardId])
+  @@map("flashcard_reviews")
+}
+
+model StudySession {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewed    Int       @default(0)
+  correct     Int       @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([userId, startedAt])
+  @@map("study_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Organization and revision history
+// ---------------------------------------------------------------------------
+model Tag {
+  id        String        @id @default(cuid())
+  ownerId   String
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  color     String?
+  createdAt DateTime      @default(now())
+  notes     NoteTag[]
+  reviewers ReviewerTag[]
+  quizzes   QuizTag[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+  @@map("tags")
+}
+
+model NoteTag {
+  noteId String
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+  @@map("note_tags")
+}
+
+model ReviewerTag {
+  reviewerId String
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([reviewerId, tagId])
+  @@map("reviewer_tags")
+}
+
+model QuizTag {
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, tagId])
+  @@map("quiz_tags")
+}
+
+model ResourceRevision {
+  id           String       @id @default(cuid())
+  ownerId      String
+  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  resourceId   String
+  resourceType ResourceType
+  snapshot     Json
+  createdAt    DateTime     @default(now())
+
+  @@index([ownerId, resourceType, resourceId, createdAt])
+  @@map("resource_revisions")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String?
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
 }
 
 // ---------------------------------------------------------------------------
@@ -255,21 +483,39 @@ model ResourceShare {
   @@map("resource_shares")
 }
 
+model ResourceInvite {
+  id           String       @id @default(cuid())
+  resourceId   String
+  resourceType ResourceType
+  ownerId      String
+  owner        User         @relation("ResourceInvitesGiven", fields: [ownerId], references: [id], onDelete: Cascade)
+  email        String
+  permission   Permission   @default(VIEW)
+  expiresAt    DateTime
+  createdAt    DateTime     @default(now())
+
+  @@unique([resourceId, resourceType, email])
+  @@index([email, expiresAt])
+  @@map("resource_invites")
+}
+
 // ---------------------------------------------------------------------------
 // Public collections — an owner picks a set of notes/reviewers/quizzes and
 // publishes them at a single public, read-only URL (/c/[slug]). No account
 // is required to view a collection or leave feedback on it.
 // ---------------------------------------------------------------------------
 model ShareCollection {
-  id          String   @id @default(cuid())
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  slug        String   @unique
-  title       String
-  description String?
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  ownerId      String
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  slug         String    @unique
+  title        String
+  description  String?
+  isPublished  Boolean   @default(false)
+  passwordHash Bytes?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   items    ShareCollectionItem[]
   feedback ShareFeedback[]

@@ -2,7 +2,7 @@
 
 A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 15, TypeScript, Prisma, and NextAuth.
 
-Memora never calls an AI API on its own behalf. Instead, it generates ready-to-use prompts from your notes; you paste them into Claude (or any AI assistant you already use) and bring the structured result back in. You review and validate everything before it's saved.
+Memora can generate ready-to-use prompts for a manual copy/paste workflow, or users can connect their own OpenAI, Anthropic, or Gemini API key for one-click generation. Provider keys are encrypted at rest and AI output is validated before it is saved.
 
 ## Stack
 
@@ -82,7 +82,7 @@ This is deliberately **not** implicit ORM magic: `lib/notes-repo.ts` and `lib/re
 
 1. **Import** — upload a `.md`/`.txt`/`.pdf` file (or a Memora `.json` export, see Round-trip below), paste content, or connect your own Google Drive/Notion workspace and choose a document.
 2. **Generate a prompt** — select notes, pick a processing style, and Memora builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memora renders it with full typography.
-3. **Run it in Claude** — copy the prompt into Claude (or another AI assistant) yourself.
+3. **Generate or copy** — use an encrypted, user-owned OpenAI/Anthropic/Gemini key for direct generation, or copy the prompt into any AI assistant yourself.
 4. **Import the result** — paste the response back into Memora. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
 5. **Study** — turn the result into flashcards, quizzes, and exams, and track attempts over time.
 
@@ -125,8 +125,7 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 
 **Implemented:** auth, notes CRUD + local and connected-app imports, JSON/MD/PDF export, a full Markdown editor, reviewer and quiz generation, 7 question types, Review and Exam test modes, timers and auto-grading, results screens, flashcards, full guest mode, sharing, per-user Google/Notion connections, settings, global search, and compressed at-rest storage.
 
-**Marked as TODO in code** rather than faked:
-- Mastery-mode adaptive practice / spaced repetition scheduling (`app/(app)/study/page.tsx`).
+The study system persists editable flashcards, schedules reviews with spaced repetition, records study sessions, presents a due-card queue, and exports cards as Anki-compatible CSV. Mastery tests use prior graded attempts to prioritize questions the learner has missed most often.
 
 ## Design system
 

@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { requireUserOrNull } from "@/lib/auth/session";
 import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
-import { addCollectionItem, removeCollectionItem } from "@/lib/share-collections-repo";
+import { addCollectionItem, removeCollectionItem, reorderCollectionItems } from "@/lib/share-collections-repo";
 import { z } from "zod";
 
 const addSchema = z.object({
   resourceType: z.enum(["NOTE", "REVIEWER", "QUIZ"]),
   resourceId: z.string().min(1),
+});
+const reorderSchema = z.object({ itemIds: z.array(z.string()).max(100) });
+
+export const PATCH = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {
+  const [{ id }, user, body] = await Promise.all([context.params, requireUserOrNull(), request.json().catch(() => null)]);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const parsed = reorderSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid order." }, { status: 400 });
+  try { await reorderCollectionItems(user.id, id, parsed.data.itemIds); return NextResponse.json({ success: true }); }
+  catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Couldn't reorder items." }, { status: 400 }); }
 });
 
 export const POST = withApiErrorHandling(async (request: Request, context: RouteContext<{ id: string }>) => {

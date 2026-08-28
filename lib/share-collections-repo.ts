@@ -55,7 +55,7 @@ export async function getCollectionEditorData(ownerId: string, id: string) {
 export async function updateCollection(
   ownerId: string,
   id: string,
-  data: { title?: string; description?: string; isPublished?: boolean }
+  data: { title?: string; description?: string; isPublished?: boolean; passwordHash?: Buffer | null; expiresAt?: Date | null }
 ) {
   const existing = await findCollectionForOwner(ownerId, id);
   if (!existing) throw new Error("Collection not found.");
@@ -99,6 +99,12 @@ export async function removeCollectionItem(ownerId: string, collectionId: string
   const collection = await findCollectionForOwner(ownerId, collectionId);
   if (!collection) throw new Error("Collection not found.");
   await prisma.shareCollectionItem.deleteMany({ where: { id: itemId, collectionId } });
+}
+
+export async function reorderCollectionItems(ownerId: string, collectionId: string, itemIds: string[]) {
+  const collection = await findCollectionForOwner(ownerId, collectionId);
+  if (!collection || collection.items.length !== itemIds.length || collection.items.some((item) => !itemIds.includes(item.id))) throw new Error("Invalid collection order.");
+  await prisma.$transaction(itemIds.map((id, position) => prisma.shareCollectionItem.update({ where: { id }, data: { position } })));
 }
 
 async function resourceBelongsTo(ownerId: string, resourceType: ResourceType, resourceId: string): Promise<boolean> {
@@ -146,7 +152,7 @@ export interface PublicCollection {
  * items the owner explicitly added, hydrated read-only, and only when the
  * collection is published. Never exposes anything the owner didn't pick.
  */
-export async function getPublicCollectionBySlug(slug: string): Promise<PublicCollection | null> {
+export async function getPublicCollectionBySlug(slug: string, allowProtected = false): Promise<PublicCollection | null> {
   const collection = await prisma.shareCollection.findUnique({
     where: { slug },
     include: {
@@ -155,7 +161,7 @@ export async function getPublicCollectionBySlug(slug: string): Promise<PublicCol
       feedback: { orderBy: { createdAt: "desc" }, select: { id: true, authorName: true, message: true, createdAt: true } },
     },
   });
-  if (!collection || !collection.isPublished) return null;
+  if (!collection || !collection.isPublished || (collection.expiresAt && collection.expiresAt <= new Date()) || (collection.passwordHash && !allowProtected)) return null;
 
   const noteIds = collection.items.filter((i) => i.resourceType === "NOTE").map((i) => i.resourceId);
   const reviewerIds = collection.items.filter((i) => i.resourceType === "REVIEWER").map((i) => i.resourceId);
@@ -198,7 +204,7 @@ export async function addFeedback(params: {
   resourceId?: string;
 }) {
   const collection = await prisma.shareCollection.findUnique({ where: { slug: params.slug } });
-  if (!collection || !collection.isPublished) throw new Error("Collection not found.");
+  if (!collection || !collection.isPublished || (collection.expiresAt && collection.expiresAt <= new Date())) throw new Error("Collection not found.");
 
   if (params.resourceType && params.resourceId) {
     const included = await prisma.shareCollectionItem.findUnique({
@@ -214,7 +220,7 @@ export async function addFeedback(params: {
     if (!included) throw new Error("That resource is not part of this collection.");
   }
 
-  return prisma.shareFeedback.create({
+  const feedback = await prisma.shareFeedback.create({
     data: {
       collectionId: collection.id,
       authorName: params.authorName?.trim() || null,
@@ -223,4 +229,6 @@ export async function addFeedback(params: {
       resourceId: params.resourceId,
     },
   });
+  await prisma.notification.create({ data: { userId: collection.ownerId, type: "COLLECTION_FEEDBACK", title: "New collection feedback", message: params.message.slice(0, 160), href: `/shared/collections/${collection.id}` } });
+  return feedback;
 }

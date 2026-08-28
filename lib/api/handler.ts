@@ -24,17 +24,22 @@ export function withApiErrorHandling<Args extends unknown[]>(
   handler: (request: Request, ...args: Args) => Promise<NextResponse>
 ) {
   return async (request: Request, ...args: Args): Promise<NextResponse> => {
+    const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
     try {
-      return await handler(request, ...args);
+      const response = await handler(request, ...args);
+      response.headers.set("x-request-id", requestId);
+      return response;
     } catch (err) {
       // Preserve Next.js control-flow signals (dynamic rendering, redirects,
       // notFound) instead of disguising them as application 500 responses.
       unstable_rethrow(err);
-      console.error("[api] unhandled error:", err);
-      return NextResponse.json(
-        { error: "Something went wrong on our end. Please try again in a moment." },
+      console.error(`[api:${requestId}] unhandled error:`, err);
+      const response = NextResponse.json(
+        { error: "Something went wrong on our end. Please try again in a moment.", requestId },
         { status: 500 }
       );
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
   };
 }

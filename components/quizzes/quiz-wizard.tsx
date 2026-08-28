@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Plus, X, UploadCloud } from "lucide-react";
+import { Copy, Check, Plus, X, UploadCloud, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { validateStructuredQuiz, quizConfigurationSchema, parseAiJson } from "@/lib/validation/quiz";
@@ -21,6 +21,7 @@ const QUESTION_TYPES = [
 const MODES = [
   { value: "QUIZ", label: "Quiz" },
   { value: "PRACTICE_EXAM", label: "Practice Exam" },
+  { value: "MOCK_EXAM", label: "Mock Exam" },
   { value: "TIMED_EXAM", label: "Timed Exam" },
   { value: "MASTERY_TEST", label: "Mastery Test" },
 ] as const;
@@ -30,15 +31,15 @@ interface Source {
   title: string;
 }
 
-export function QuizWizard({ notes, reviewers, defaultReviewerId, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultReviewerId?: string; initiallyOpen?: boolean }) {
+export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultReviewerId?: string; defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: (typeof MODES)[number]["value"] }; initiallyOpen?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultReviewerId) || initiallyOpen);
   const [step, setStep] = useState(1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>(defaultReviewerId ? [defaultReviewerId] : []);
-  const [mode, setMode] = useState<(typeof MODES)[number]["value"]>("QUIZ");
-  const [questionCount, setQuestionCount] = useState(10);
-  const [difficulty, setDifficulty] = useState<"EASY" | "NORMAL" | "HARD" | "MIXED">("MIXED");
+  const [mode, setMode] = useState<(typeof MODES)[number]["value"]>(defaults.mode);
+  const [questionCount, setQuestionCount] = useState(defaults.questionCount);
+  const [difficulty, setDifficulty] = useState<"EASY" | "NORMAL" | "HARD" | "MIXED">(defaults.difficulty);
   const [questionTypes, setQuestionTypes] = useState<string[]>(["multiple_choice", "true_false"]);
   const [prompt, setPrompt] = useState("");
   const [copied, setCopied] = useState(false);
@@ -85,6 +86,37 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, initiallyOpen 
     navigator.clipboard.writeText(prompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function generateWithConnectedAi() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(payload?.error ?? "AI generation failed.");
+        return;
+      }
+      const parsed = parseAiJson(payload.text);
+      const result = validateStructuredQuiz(parsed);
+      setPastedJson(payload.text);
+      if (result.success) {
+        setValidation({ valid: true, data: result.data });
+        setTitle(result.data.title);
+      } else {
+        setValidation({ valid: false, errors: result.errors.map((item) => `${item.path}: ${item.message}`) });
+      }
+      setStep(4);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "AI generation failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleValidate() {
@@ -264,6 +296,9 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, initiallyOpen 
           <div className="mt-3 flex justify-between">
             <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
             <div className="flex gap-2">
+              <Button onClick={() => void generateWithConnectedAi()} loading={loading}>
+                <Sparkles className="h-4 w-4" /> Generate here
+              </Button>
               <Button variant="outline" onClick={copyPrompt}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy prompt"}
               </Button>

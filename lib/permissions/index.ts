@@ -66,6 +66,7 @@ export async function isOwner(userId: string, resourceType: ResourceType, resour
 export async function deleteSharesForResource(resourceType: ResourceType, resourceId: string) {
   await prisma.$transaction([
     prisma.resourceShare.deleteMany({ where: { resourceType, resourceId } }),
+    prisma.resourceInvite.deleteMany({ where: { resourceType, resourceId } }),
     prisma.shareCollectionItem.deleteMany({ where: { resourceType, resourceId } }),
     prisma.shareFeedback.deleteMany({ where: { resourceType, resourceId } }),
   ]);
@@ -91,7 +92,7 @@ export async function shareResource(params: {
     throw new Error("You already own this resource.");
   }
 
-  return prisma.resourceShare.upsert({
+  const share = await prisma.resourceShare.upsert({
     where: {
       resourceId_resourceType_userId: {
         resourceId: params.resourceId,
@@ -108,6 +109,8 @@ export async function shareResource(params: {
       permission: params.permission,
     },
   });
+  await prisma.notification.create({ data: { userId: grantee.id, type: "RESOURCE_SHARED", title: `A ${params.resourceType.toLowerCase()} was shared with you`, message: `You received ${params.permission.toLowerCase()} access.`, href: `/${params.resourceType.toLowerCase()}s/${params.resourceId}` } });
+  return share;
 }
 
 export async function revokeShare(params: {

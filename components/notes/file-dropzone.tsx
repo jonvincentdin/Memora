@@ -6,22 +6,26 @@ import { cn } from "@/lib/utils";
 
 interface FileDropzoneProps {
   onFileSelected: (file: File) => void;
+  onFilesSelected?: (files: File[]) => void;
   accept?: string;
+  multiple?: boolean;
 }
 
-export function FileDropzone({ onFileSelected, accept = ".md,.txt,.pdf,.docx,.json" }: FileDropzoneProps) {
+export function FileDropzone({ onFileSelected, onFilesSelected, accept = ".md,.txt,.pdf,.docx,.json", multiple = false }: FileDropzoneProps) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
-      const file = files?.[0];
+      const selected = Array.from(files ?? []);
+      const file = selected[0];
       if (!file) return;
-      setFileName(file.name);
+      setFileName(selected.length > 1 ? `${selected.length} files selected` : file.name);
+      onFilesSelected?.(selected);
       onFileSelected(file);
     },
-    [onFileSelected]
+    [onFileSelected, onFilesSelected]
   );
 
   return (
@@ -45,6 +49,7 @@ export function FileDropzone({ onFileSelected, accept = ".md,.txt,.pdf,.docx,.js
       <input
         ref={inputRef}
         type="file"
+        multiple={multiple}
         accept={accept}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}

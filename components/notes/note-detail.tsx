@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, Trash2, Sparkles, ArrowLeft, FileText } from "lucide-react";
@@ -12,6 +12,9 @@ import { ShareDialog } from "@/components/sharing/share-dialog";
 import { MarkdownEditor } from "@/components/markdown/editor";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { formatDate } from "@/lib/utils";
+import { ResourceActions } from "@/components/library/resource-actions";
+import { TagEditor } from "@/components/library/tag-editor";
+import { RevisionHistory } from "@/components/library/revision-history";
 
 interface NoteDetailProps {
   note: {
@@ -21,17 +24,34 @@ interface NoteDetailProps {
     content: string;
     sourceType: string;
     updatedAt: string;
+    archived: boolean;
+    favorite: boolean;
   };
   canEdit: boolean;
   isOwner: boolean;
+  autoSave: boolean;
 }
 
-export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
+export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps) {
   const router = useRouter();
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const lastSaved = useRef(`${note.title}\u0000${note.content}`);
+
+  useEffect(() => {
+    if (!autoSave || !canEdit) return;
+    const signature = `${title}\u0000${content}`;
+    if (signature === lastSaved.current) return;
+    const timer = window.setTimeout(async () => {
+      setSaving(true);
+      const response = await fetch(`/api/notes/${note.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Memora-Autosave": "1" }, body: JSON.stringify({ title, content }) });
+      setSaving(false);
+      if (response.ok) { lastSaved.current = signature; setSaved(true); window.setTimeout(() => setSaved(false), 1500); }
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [autoSave, canEdit, content, note.id, title]);
 
   async function handleSave() {
     setSaving(true);
@@ -42,6 +62,7 @@ export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
     });
     setSaving(false);
     if (res.ok) {
+      lastSaved.current = `${title}\u0000${content}`;
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
@@ -76,6 +97,8 @@ export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
             <Sparkles className="h-3.5 w-3.5" /> Build reviewer
           </Button>
           {isOwner && <ShareDialog resourceType="NOTE" resourceId={note.id} />}
+          {isOwner && <ResourceActions resourceType="NOTE" resourceId={note.id} archived={note.archived} favorite={note.favorite} />}
+          {isOwner && <RevisionHistory resourceType="NOTE" resourceId={note.id} />}
           {isOwner && (
             <ConfirmDialog
               trigger={
@@ -95,6 +118,7 @@ export function NoteDetail({ note, canEdit, isOwner }: NoteDetailProps) {
 
       {canEdit ? (
         <>
+          {isOwner && <TagEditor resourceType="NOTE" resourceId={note.id} />}
           <Label htmlFor="title">Title</Label>
           <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="mb-4 font-display text-lg" />
           <Label>Content (Markdown)</Label>

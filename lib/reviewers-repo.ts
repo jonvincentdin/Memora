@@ -54,3 +54,8 @@ export async function findReviewersByIds(ids: string[]): Promise<Reviewer[]> {
   const reviewers = await prisma.reviewer.findMany({ where: { id: { in: ids } } });
   return reviewers.map(hydrate);
 }
+
+export async function findReviewersByOwner(ownerId: string): Promise<Reviewer[]> {
+  const reviewers = await prisma.reviewer.findMany({ where: { ownerId }, orderBy: { updatedAt: "desc" } });
+  return reviewers.map(hydrate);
+}

@@ -170,6 +170,12 @@ export const createQuizSchema = z.object({
 });
 
 export const submitAttemptSchema = z.object({
+  attemptId: z.string().min(1),
+  answers: z.record(z.string(), z.unknown()),
+  flagged: z.array(z.string()).default([]),
+});
+
+export const saveAttemptSchema = z.object({
   answers: z.record(z.string(), z.unknown()),
   flagged: z.array(z.string()).default([]),
 });

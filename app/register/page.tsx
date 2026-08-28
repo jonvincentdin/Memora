@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -14,6 +14,11 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const invitedEmail = new URLSearchParams(window.location.search).get("email");
+    if (invitedEmail) setForm((current) => ({ ...current, email: invitedEmail }));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +41,11 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data.error ?? "Something went wrong.");
         setLoading(false);
+        return;
+      }
+
+      if (data.requiresVerification) {
+        router.replace(`/verify-email?sent=1&email=${encodeURIComponent(parsed.data.email)}`);
         return;
       }
 

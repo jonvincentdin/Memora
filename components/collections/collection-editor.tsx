@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, Check, Trash2, ExternalLink, ArrowLeft, MessageSquare } from "lucide-react";
+import { Copy, Check, Trash2, ExternalLink, ArrowLeft, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime, cn } from "@/lib/utils";
+import { Input, Label, Textarea } from "@/components/ui/input";
 
 type ResourceType = "NOTE" | "REVIEWER" | "QUIZ";
 interface CollectionItem { id: string; resourceType: ResourceType; resourceId: string }
@@ -16,6 +17,8 @@ interface Collection {
   description: string | null;
   slug: string;
   isPublished: boolean;
+  expiresAt: string | null;
+  passwordProtected: boolean;
   items: CollectionItem[];
 }
 interface PickerRow { id: string; title: string }
@@ -43,6 +46,12 @@ export function CollectionEditor({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState(initialFeedback);
+  const [title, setTitle] = useState(initialCollection.title);
+  const [description, setDescription] = useState(initialCollection.description ?? "");
+  const [password, setPassword] = useState("");
+  const [expiresAt, setExpiresAt] = useState(initialCollection.expiresAt?.slice(0, 10) ?? "");
+  const [savingSettings, setSavingSettings] = useState(false);
   const publicPath = `/c/${collection.slug}`;
 
   function isIncluded(resourceType: ResourceType, resourceId: string) {
@@ -108,6 +117,34 @@ export function CollectionEditor({
     }
   }
 
+  async function saveSettings() {
+    setSavingSettings(true); setError(null);
+    try {
+      const response = await fetch(`/api/collections/${collection.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title.trim(), description: description.trim(), password: password || undefined, expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59.999Z`).toISOString() : null }) });
+      const data = await response.json().catch(() => null); if (!response.ok) throw new Error(data?.error ?? "Couldn't save collection settings.");
+      setCollection((current) => ({ ...current, title: data.collection.title, description: data.collection.description, expiresAt: data.collection.expiresAt, passwordProtected: password ? true : current.passwordProtected })); setPassword("");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Couldn't reach the server."); }
+    finally { setSavingSettings(false); }
+  }
+
+  async function clearPassword() {
+    const response = await fetch(`/api/collections/${collection.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: null }) });
+    if (response.ok) setCollection((current) => ({ ...current, passwordProtected: false }));
+  }
+
+  async function moveItem(itemId: string, direction: -1 | 1) {
+    const index = collection.items.findIndex((item) => item.id === itemId); const target = index + direction;
+    if (index < 0 || target < 0 || target >= collection.items.length) return;
+    const next = [...collection.items]; [next[index], next[target]] = [next[target], next[index]]; setCollection((current) => ({ ...current, items: next }));
+    const response = await fetch(`/api/collections/${collection.id}/items`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itemIds: next.map((item) => item.id) }) });
+    if (!response.ok) setCollection((current) => ({ ...current, items: collection.items }));
+  }
+
+  async function removeFeedback(feedbackId: string) {
+    const response = await fetch(`/api/collections/${collection.id}/feedback?feedbackId=${feedbackId}`, { method: "DELETE" });
+    if (response.ok) setFeedback((current) => current.filter((item) => item.id !== feedbackId));
+  }
+
   async function copyLink() {
     await navigator.clipboard.writeText(`${window.location.origin}${publicPath}`);
     setCopied(true);
@@ -152,6 +189,8 @@ export function CollectionEditor({
       </div>
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
+      <div className="card mt-5 p-5"><h2 className="font-display text-lg text-ink">Collection settings</h2><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><Label htmlFor="collection-title">Title</Label><Input id="collection-title" value={title} onChange={(event) => setTitle(event.target.value)} /></div><div><Label htmlFor="collection-expiry">Link expires (optional)</Label><Input id="collection-expiry" type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></div><div className="sm:col-span-2"><Label htmlFor="collection-description">Description</Label><Textarea id="collection-description" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} /></div><div><Label htmlFor="collection-password">{collection.passwordProtected ? "Replace password" : "Password (optional)"}</Label><Input id="collection-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></div></div><div className="mt-4 flex gap-2"><Button onClick={saveSettings} loading={savingSettings}>Save settings</Button>{collection.passwordProtected && <Button variant="ghost" onClick={clearPassword}>Remove password</Button>}</div></div>
+
       <h2 className="mt-8 text-sm font-medium text-ink">Choose what&apos;s included</h2>
       <div className="mt-2 flex w-fit gap-1 rounded-lg border border-line bg-surface p-1">
         {TABS.map((item) => (
@@ -164,6 +203,8 @@ export function CollectionEditor({
           </button>
         ))}
       </div>
+
+      {collection.items.length > 1 && <div className="card mt-5 divide-y divide-line"><p className="p-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Public display order</p>{collection.items.map((item, index) => { const row = rows[item.resourceType].find((candidate) => candidate.id === item.resourceId); return <div key={item.id} className="flex items-center justify-between gap-3 p-3"><span className="truncate text-sm text-ink">{row?.title ?? "Removed resource"}</span><div className="flex"><button aria-label="Move up" disabled={index === 0} onClick={() => moveItem(item.id, -1)} className="p-1 disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button><button aria-label="Move down" disabled={index === collection.items.length - 1} onClick={() => moveItem(item.id, 1)} className="p-1 disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button></div></div>; })}</div>}
 
       <div className="card mt-3 divide-y divide-line">
         {rows[tab].length === 0 ? (
@@ -187,17 +228,17 @@ export function CollectionEditor({
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="flex items-center gap-1.5 text-sm font-medium text-ink">
-          <MessageSquare className="h-4 w-4" /> Feedback from viewers ({initialFeedback.length})
+          <MessageSquare className="h-4 w-4" /> Feedback from viewers ({feedback.length})
         </h2>
       </div>
-      {initialFeedback.length === 0 ? (
+      {feedback.length === 0 ? (
         <p className="mt-2 text-sm text-ink-faint">Nothing yet — feedback left on your public link will show up here.</p>
       ) : (
         <div className="mt-2 space-y-2">
-          {initialFeedback.map((feedback) => (
-            <div key={feedback.id} className="card p-3.5">
-              <p className="text-sm text-ink">{feedback.message}</p>
-              <p className="mt-1 text-xs text-ink-faint">{feedback.authorName || "Anonymous"} · {formatRelativeTime(feedback.createdAt)}</p>
+          {feedback.map((item) => (
+            <div key={item.id} className="card flex items-start justify-between gap-3 p-3.5">
+              <div><p className="text-sm text-ink">{item.message}</p><p className="mt-1 text-xs text-ink-faint">{item.authorName || "Anonymous"} · {formatRelativeTime(item.createdAt)}</p></div>
+              <button aria-label="Delete feedback" className="text-ink-faint hover:text-danger" onClick={() => removeFeedback(item.id)}><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>

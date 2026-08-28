@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookMarked, LayoutDashboard, FileText, Layers, ListChecks, GraduationCap, Share2, Settings } from "lucide-react";
+import { BookMarked, LayoutDashboard, FileText, Layers, ListChecks, GraduationCap, Share2, Settings, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -12,6 +12,7 @@ const links = [
   { href: "/quizzes", label: "Quizzes", icon: ListChecks },
   { href: "/study", label: "Study", icon: GraduationCap },
   { href: "/shared", label: "Shared with Me", icon: Share2 },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -5,6 +5,7 @@ import { findNoteSummariesByOwner } from "@/lib/notes-repo";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/utils";
+import { LibraryNavigation } from "@/components/library/library-navigation";
 
 const sourceLabels: Record<string, string> = {
   PDF: "PDF",
@@ -15,9 +16,12 @@ const sourceLabels: Record<string, string> = {
   MANUAL: "Manual",
 };
 
-export default async function NotesPage() {
+export default async function NotesPage({ searchParams }: { searchParams: Promise<{ view?: string; page?: string }> }) {
+  const query = await searchParams;
   const user = await requireUser();
-  const notes = await findNoteSummariesByOwner(user.id);
+  const archived = query.view === "archived";
+  const page = Math.max(1, Number(query.page) || 1);
+  const notes = await findNoteSummariesByOwner(user.id, { archived, page, pageSize: 24 });
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -33,6 +37,7 @@ export default async function NotesPage() {
           <Plus className="h-4 w-4" /> Import note
         </Link>
       </div>
+      <div className="mb-5"><LibraryNavigation basePath="/notes" archived={archived} page={page} hasNext={notes.length === 24} /></div>
 
       {notes.length === 0 ? (
         <EmptyState
@@ -51,6 +56,7 @@ export default async function NotesPage() {
                 <span className="text-xs text-ink-faint">{formatRelativeTime(note.updatedAt)}</span>
               </div>
               <p className="font-display text-base text-ink line-clamp-1">{note.title}</p>
+              {note.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
               <p className="mt-1 text-sm text-ink-soft line-clamp-2">
                 {note.description || note.originalFilename || "Open this note to view the lesson."}
               </p>

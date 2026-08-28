@@ -14,17 +14,17 @@ export const GET = withApiErrorHandling(async (request: Request) => {
 
   const [notes, reviewers, quizzes] = await Promise.all([
     prisma.note.findMany({
-      where: { ownerId: user.id, title: { contains: q, mode: "insensitive" } },
+      where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { originalFilename: { contains: q, mode: "insensitive" } }] },
       select: { id: true, title: true, updatedAt: true },
       take: 10,
     }),
     prisma.reviewer.findMany({
-      where: { ownerId: user.id, title: { contains: q, mode: "insensitive" } },
+      where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] },
       select: { id: true, title: true, updatedAt: true },
       take: 10,
     }),
     prisma.quiz.findMany({
-      where: { ownerId: user.id, title: { contains: q, mode: "insensitive" } },
+      where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] },
       select: { id: true, title: true, updatedAt: true },
       take: 10,
     }),
