@@ -1,11 +1,11 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { authOptions } from "@/lib/auth/options";
 
-/** Returns the current session, or null if the visitor is not signed in. */
-export async function getCurrentSession() {
-  return getServerSession(authOptions);
-}
+/** Request-scoped memoization prevents the layout and page from decoding the
+ * same JWT twice during one server render. */
+export const getCurrentSession = cache(() => getServerSession(authOptions));
 
 /**
  * Returns the current authenticated user, redirecting to /login when there

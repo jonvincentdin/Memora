@@ -35,6 +35,23 @@ export async function findCollectionForOwner(ownerId: string, id: string) {
   });
 }
 
+/** Loads the collection editor in one parallel database round trip. */
+export async function getCollectionEditorData(ownerId: string, id: string) {
+  const [collection, notes, reviewers, quizzes, feedback] = await Promise.all([
+    findCollectionForOwner(ownerId, id),
+    prisma.note.findMany({ where: { ownerId }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.reviewer.findMany({ where: { ownerId }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.quiz.findMany({ where: { ownerId }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
+    prisma.shareFeedback.findMany({
+      where: { collectionId: id, collection: { ownerId } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, authorName: true, message: true, createdAt: true },
+    }),
+  ]);
+
+  return { collection, rows: { NOTE: notes, REVIEWER: reviewers, QUIZ: quizzes }, feedback };
+}
+
 export async function updateCollection(
   ownerId: string,
   id: string,

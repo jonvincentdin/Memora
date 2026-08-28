@@ -30,9 +30,9 @@ interface Note {
   title: string;
 }
 
-export function ReviewerWizard({ notes, defaultNoteId }: { notes: Note[]; defaultNoteId?: string }) {
+export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(Boolean(defaultNoteId));
+  const [open, setOpen] = useState(Boolean(defaultNoteId) || initiallyOpen);
   const [step, setStep] = useState(1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [style, setStyle] = useState<(typeof STYLES)[number]["value"]>("COMPLETE");
@@ -106,7 +106,6 @@ export function ReviewerWizard({ notes, defaultNoteId }: { notes: Note[]; defaul
       return;
     }
     router.push(`/reviewers/${data.reviewer.id}`);
-    router.refresh();
   }
 
   if (!open) {

@@ -8,7 +8,6 @@ import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { FileDropzone } from "@/components/notes/file-dropzone";
 import { stripCodeFences } from "@/lib/validation/reviewer";
 import { serializeWithFrontmatter } from "@/lib/markdown-frontmatter";
-import { exportMarkdownToPdf } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 import { extractFlashcardsFromMarkdown } from "@/lib/flashcards";
 import { GuestFlashcards } from "@/components/guest/guest-flashcards";
@@ -95,6 +94,11 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
   const isValidLength = cleanedMarkdown.trim().length >= 20;
   const flashcards = extractFlashcardsFromMarkdown(cleanedMarkdown);
 
+  async function exportPdf() {
+    const { exportMarkdownToPdf } = await import("@/lib/pdf-export");
+    exportMarkdownToPdf(title, cleanedMarkdown);
+  }
+
   return (
     <div className="space-y-5">
       <div className="card p-5">
@@ -164,7 +168,7 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
                 {resultView === "reviewer" ? <MarkdownRenderer content={cleanedMarkdown} /> : <GuestFlashcards cards={flashcards} />}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => exportMarkdownToPdf(title, cleanedMarkdown)}>
+                <Button variant="outline" size="sm" onClick={() => void exportPdf()}>
                   <FileText className="h-3.5 w-3.5" /> Export PDF
                 </Button>
                 <Button

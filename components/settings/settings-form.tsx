@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/layout/theme-provider";
@@ -17,6 +17,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
   const [settings, setSettings] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const lastSavedQuestionCount = useRef(initial.defaultQuestionCount);
   const { theme, setTheme } = useTheme();
 
   // The account's stored appearance is the source of truth the first time a
@@ -43,6 +44,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error("save failed");
+      if (patch.defaultQuestionCount !== undefined) lastSavedQuestionCount.current = patch.defaultQuestionCount;
     } catch {
       // Appearance already applied locally even if the account sync fails —
       // don't block or roll back the visual change over a flaky save.
@@ -84,7 +86,12 @@ export function SettingsForm({ initial }: { initial: Settings }) {
               min={1}
               max={100}
               value={settings.defaultQuestionCount}
-              onChange={(e) => save({ defaultQuestionCount: Number(e.target.value) })}
+              onChange={(e) => setSettings((current) => ({ ...current, defaultQuestionCount: Number(e.target.value) }))}
+              onBlur={(e) => {
+                const value = Math.min(100, Math.max(1, Number(e.target.value) || 1));
+                setSettings((current) => ({ ...current, defaultQuestionCount: value }));
+                if (value !== lastSavedQuestionCount.current) void save({ defaultQuestionCount: value });
+              }}
               className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm"
             />
           </div>

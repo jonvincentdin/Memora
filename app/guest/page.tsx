@@ -1,9 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { GuestReviewerFlow } from "@/components/guest/guest-reviewer-flow";
-import { GuestQuizFlow } from "@/components/guest/guest-quiz-flow";
+
+const GuestReviewerFlow = dynamic(
+  () => import("@/components/guest/guest-reviewer-flow").then((module) => module.GuestReviewerFlow),
+  { loading: () => <ActivityLoading /> }
+);
+const GuestQuizFlow = dynamic(
+  () => import("@/components/guest/guest-quiz-flow").then((module) => module.GuestQuizFlow),
+  { loading: () => <ActivityLoading /> }
+);
 
 export default function GuestPage() {
   const [tab, setTab] = useState<"reviewer" | "flashcards" | "quiz" | "exam">("reviewer");
@@ -43,4 +51,8 @@ export default function GuestPage() {
       </div>
     </div>
   );
+}
+
+function ActivityLoading() {
+  return <div className="card h-48 animate-pulse bg-ink/[0.03]" aria-label="Loading activity" />;
 }

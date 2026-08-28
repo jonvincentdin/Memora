@@ -13,7 +13,13 @@ export default async function StudyHubPage() {
       where: { userId: user.id, completedAt: { not: null } },
       orderBy: { completedAt: "desc" },
       take: 5,
-      include: { quiz: { select: { id: true, title: true } } },
+      select: {
+        id: true,
+        score: true,
+        totalQuestions: true,
+        completedAt: true,
+        quiz: { select: { id: true, title: true } },
+      },
     }),
   ]);
 

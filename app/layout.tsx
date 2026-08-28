@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthSessionProvider } from "@/components/layout/session-provider";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/layout/theme-provider";
 
 const display = Fraunces({
@@ -38,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <ThemeProvider>
-          <AuthSessionProvider>{children}</AuthSessionProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

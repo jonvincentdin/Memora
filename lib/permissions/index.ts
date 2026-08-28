@@ -16,6 +16,21 @@ const ownerLookup: Record<ResourceType, (id: string) => Promise<{ ownerId: strin
 
 export type AccessLevel = "OWNER" | "EDIT" | "VIEW" | "NONE";
 
+export async function getAccessLevelForOwner(
+  userId: string,
+  resourceType: ResourceType,
+  resourceId: string,
+  ownerId: string
+): Promise<AccessLevel> {
+  if (ownerId === userId) return "OWNER";
+  const share = await prisma.resourceShare.findUnique({
+    where: { resourceId_resourceType_userId: { resourceId, resourceType, userId } },
+    select: { permission: true },
+  });
+  if (!share) return "NONE";
+  return share.permission === "EDIT" ? "EDIT" : "VIEW";
+}
+
 /**
  * Resolves the effective access level a user has on a resource: direct
  * ownership beats an explicit share, and no row/share means no access.
@@ -29,17 +44,7 @@ export async function getAccessLevel(
 ): Promise<AccessLevel> {
   const resource = await ownerLookup[resourceType](resourceId);
   if (!resource) return "NONE";
-  if (resource.ownerId === userId) return "OWNER";
-
-  const share = await prisma.resourceShare.findUnique({
-    where: {
-      resourceId_resourceType_userId: { resourceId, resourceType, userId },
-    },
-    select: { permission: true },
-  });
-
-  if (!share) return "NONE";
-  return share.permission === "EDIT" ? "EDIT" : "VIEW";
+  return getAccessLevelForOwner(userId, resourceType, resourceId, resource.ownerId);
 }
 
 export async function canView(userId: string, resourceType: ResourceType, resourceId: string) {

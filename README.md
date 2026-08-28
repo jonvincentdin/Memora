@@ -33,6 +33,12 @@ Never commit `.env`. If a secret is exposed, removing the file is not enough: ro
 
 Vercel runs `prisma migrate deploy` for production deployments only. Preview builds skip database migrations so they do not require or modify the production database.
 
+### Production latency
+
+Server functions and PostgreSQL should run in the same geographic region. This repository targets Vercel's Singapore region (`sin1`) because the production Neon database is in AWS Asia Pacific (Singapore). If the database is moved, update `regions` in `vercel.json` to the closest supported Vercel region; otherwise every authenticated page and login pays for a long cross-region database round trip.
+
+Set `DATABASE_URL` to the provider's pooled PostgreSQL connection string in Vercel Production, Preview, and Development as appropriate. Store it as a Secret and paste the raw URL without surrounding quotes. `AUTH_SECRET` must also be configured as a Secret. Redeploy after changing environment variables.
+
 ## Project structure
 
 ```

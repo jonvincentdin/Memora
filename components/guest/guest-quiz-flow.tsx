@@ -8,7 +8,6 @@ import { FileDropzone } from "@/components/notes/file-dropzone";
 import { QuestionInput } from "@/components/quizzes/question-input";
 import { parseAiJson, validateStructuredQuiz, type StructuredQuiz } from "@/lib/validation/quiz";
 import { formatCorrectAnswer, gradeQuiz, isAnswerCorrect } from "@/lib/quiz-grading";
-import { exportQuizToPdf } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 
 const QUESTION_TYPES = [
@@ -181,6 +180,12 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
     URL.revokeObjectURL(url);
   }
 
+  async function exportPdf() {
+    if (!quiz) return;
+    const { exportQuizToPdf } = await import("@/lib/pdf-export");
+    exportQuizToPdf(quiz.title, quiz.questions, { mode: quiz.settings.mode, author: "Guest" });
+  }
+
   return (
     <div className="space-y-5">
       <div className="card p-5">
@@ -229,7 +234,7 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
             <div className="mt-4 space-y-4">
               <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">{quiz.questions.length} questions parsed and ready.</div>
               <div><p className="mb-2 text-sm font-medium text-ink">Choose a test-taking mode</p><div className="grid gap-3 sm:grid-cols-2"><ModeButton onClick={() => startTest("review")} title="Review mode" description="Check each response and see explanations immediately." /><ModeButton onClick={() => startTest("exam")} title="Exam mode" description="No feedback until the final submission." /></div></div>
-              <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => exportQuizToPdf(quiz.title, quiz.questions, { mode: quiz.settings.mode, author: "Guest" })}><FileText className="h-3.5 w-3.5" /> Export PDF</Button><Button variant="outline" size="sm" onClick={downloadJson}><Download className="h-3.5 w-3.5" /> Export JSON</Button></div>
+              <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void exportPdf()}><FileText className="h-3.5 w-3.5" /> Export PDF</Button><Button variant="outline" size="sm" onClick={downloadJson}><Download className="h-3.5 w-3.5" /> Export JSON</Button></div>
             </div>
           )}
 

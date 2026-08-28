@@ -10,7 +10,6 @@ export function DeleteQuizButton({ quizId }: { quizId: string }) {
   async function handleDelete() {
     await fetch(`/api/quizzes/${quizId}`, { method: "DELETE" });
     router.push("/quizzes");
-    router.refresh();
   }
 
   return (

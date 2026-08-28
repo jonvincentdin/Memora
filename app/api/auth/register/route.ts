@@ -7,10 +7,6 @@ import { withApiErrorHandling } from "@/lib/api/handler";
 
 export const POST = withApiErrorHandling(async (request: Request) => {
   const ip = getClientIp(request.headers);
-  if (await isRateLimited(`register:${ip}`)) {
-    return NextResponse.json({ error: "Too many attempts. Wait a minute and try again." }, { status: 429 });
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
 
@@ -24,12 +20,17 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const { name, email, password } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
-  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  const [limited, existing, passwordHash] = await Promise.all([
+    isRateLimited(`register:${ip}`),
+    prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } }),
+    bcrypt.hash(password, 12),
+  ]);
+  if (limited) {
+    return NextResponse.json({ error: "Too many attempts. Wait a minute and try again." }, { status: 429 });
+  }
   if (existing) {
     return NextResponse.json({ error: "An account with that email already exists." }, { status: 409 });
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.create({
     data: {

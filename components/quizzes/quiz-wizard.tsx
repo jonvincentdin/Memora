@@ -30,9 +30,9 @@ interface Source {
   title: string;
 }
 
-export function QuizWizard({ notes, reviewers, defaultReviewerId }: { notes: Source[]; reviewers: Source[]; defaultReviewerId?: string }) {
+export function QuizWizard({ notes, reviewers, defaultReviewerId, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultReviewerId?: string; initiallyOpen?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(Boolean(defaultReviewerId));
+  const [open, setOpen] = useState(Boolean(defaultReviewerId) || initiallyOpen);
   const [step, setStep] = useState(1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>(defaultReviewerId ? [defaultReviewerId] : []);
@@ -130,7 +130,6 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId }: { notes: Sou
       return;
     }
     router.push(`/quizzes/${result.quiz.id}`);
-    router.refresh();
   }
 
   if (!open) {
