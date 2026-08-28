@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { SettingsForm } from "@/components/settings/settings-form";
+import { IntegrationConnections } from "@/components/settings/integration-connections";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -23,6 +24,7 @@ export default async function SettingsPage() {
           }}
         />
       </div>
+      <IntegrationConnections />
     </div>
   );
 }

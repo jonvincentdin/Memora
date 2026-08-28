@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Link2, FileText } from "lucide-react";
+import { Upload, Link2, FileText, Cloud } from "lucide-react";
 import { FileDropzone } from "@/components/notes/file-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-type Tab = "file" | "link";
+type Tab = "file" | "link" | "cloud";
 type Status = "idle" | "processing" | "failed";
 type LinkType = "GOOGLE_DOCS" | "NOTION" | "UNKNOWN" | null;
 
@@ -28,9 +28,9 @@ function detectLinkType(rawUrl: string): LinkType {
 
 const LINK_GUIDANCE: Record<Exclude<LinkType, null>, string> = {
   GOOGLE_DOCS:
-    "Direct Google Docs import needs the doc owner's permission and isn't wired up yet. In Google Docs, choose File → Download → Markdown (.md), then paste the contents below or upload the file on the \"Upload File\" tab instead.",
+    "For private Google Docs, connect your Google account and choose the document from the Connected Apps tab.",
   NOTION:
-    "Memora imports only this one page — never the rest of your workspace. Make sure the page is shared with Memora's Notion integration first (••• menu → Connections), then click Import below.",
+    "Memora imports this page through your personal Notion connection. Connect Notion in Settings first.",
   UNKNOWN: "We couldn't recognize this as a Google Docs or Notion link — that's fine, just paste the content below.",
 };
 
@@ -44,6 +44,9 @@ export default function ImportNotePage() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [cloudProvider, setCloudProvider] = useState<"google" | "notion">("google");
+  const [resources, setResources] = useState<Array<{ id: string; name: string; url?: string; modifiedTime?: string }>>([]);
+  const [selectedResource, setSelectedResource] = useState("");
 
   const linkType = useMemo(() => detectLinkType(link), [link]);
 
@@ -145,6 +148,50 @@ export default function ImportNotePage() {
     }
   }
 
+  async function loadCloudResources(provider: "google" | "notion") {
+    setCloudProvider(provider);
+    setSelectedResource("");
+    setResources([]);
+    setError(null);
+    setStatus("processing");
+    try {
+      const response = await fetch(`/api/integrations/${provider}/resources`, { cache: "no-store" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(data?.error ?? `Couldn't read ${provider}.`);
+        setStatus("failed");
+        return;
+      }
+      setResources(data.resources ?? []);
+      setStatus("idle");
+    } catch {
+      setError("We couldn't reach the server.");
+      setStatus("failed");
+    }
+  }
+
+  async function importCloudResource() {
+    const resource = resources.find((item) => item.id === selectedResource);
+    if (!resource) return;
+    setStatus("processing");
+    setError(null);
+    try {
+      const endpoint = `/api/notes/import/${cloudProvider}`;
+      const body = cloudProvider === "google" ? { fileId: resource.id } : { url: resource.url };
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(data?.error ?? "Import failed.");
+        setStatus("failed");
+        return;
+      }
+      router.push(`/notes/${data.note.id}`);
+    } catch {
+      setError("We couldn't reach the server.");
+      setStatus("failed");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="font-display text-2xl text-ink">Import a note</h1>
@@ -165,6 +212,12 @@ export default function ImportNotePage() {
           className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "link" ? "bg-ink text-white" : "text-ink-soft")}
         >
           <Link2 className="mr-1.5 inline h-4 w-4" /> Import Link
+        </button>
+        <button
+          onClick={() => { setTab("cloud"); if (resources.length === 0) void loadCloudResources(cloudProvider); }}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "cloud" ? "bg-ink text-white" : "text-ink-soft")}
+        >
+          <Cloud className="mr-1.5 inline h-4 w-4" /> Connected Apps
         </button>
       </div>
 
@@ -191,7 +244,7 @@ export default function ImportNotePage() {
               </Button>
             </div>
           </>
-        ) : (
+        ) : tab === "link" ? (
           <>
             <Label htmlFor="link">Google Docs or Notion link</Label>
             <Input id="link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://docs.google.com/… or https://app.notion.com/p/…" />
@@ -245,6 +298,27 @@ export default function ImportNotePage() {
                 </Button>
               </div>
             )}
+          </>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <Button variant={cloudProvider === "google" ? "primary" : "outline"} size="sm" onClick={() => void loadCloudResources("google")}>Google Drive</Button>
+              <Button variant={cloudProvider === "notion" ? "primary" : "outline"} size="sm" onClick={() => void loadCloudResources("notion")}>Notion</Button>
+            </div>
+            <p className="mt-3 text-sm text-ink-soft">Choose a document from your connected account. Manage access in <a className="text-accent underline" href="/settings">Settings</a>.</p>
+            {status === "processing" && <p className="mt-4 text-sm text-ink-soft">Loading documents…</p>}
+            {resources.length > 0 && (
+              <div className="mt-4">
+                <Label htmlFor="cloud-resource">Document</Label>
+                <select id="cloud-resource" value={selectedResource} onChange={(event) => setSelectedResource(event.target.value)} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">
+                  <option value="">Select a document…</option>
+                  {resources.map((resource) => <option key={resource.id} value={resource.id}>{resource.name}</option>)}
+                </select>
+              </div>
+            )}
+            {status !== "processing" && resources.length === 0 && !error && <p className="mt-4 text-sm text-ink-soft">No importable documents were found.</p>}
+            {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+            <div className="mt-5 flex justify-end"><Button disabled={!selectedResource} loading={status === "processing"} onClick={() => void importCloudResource()}>Import document</Button></div>
           </>
         )}
       </div>

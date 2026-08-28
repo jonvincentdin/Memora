@@ -10,6 +10,8 @@ import { stripCodeFences } from "@/lib/validation/reviewer";
 import { serializeWithFrontmatter } from "@/lib/markdown-frontmatter";
 import { exportMarkdownToPdf } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
+import { extractFlashcardsFromMarkdown } from "@/lib/flashcards";
+import { GuestFlashcards } from "@/components/guest/guest-flashcards";
 
 const PROCESSING_STYLES = [
   { value: "preserve", label: "Preserve" },
@@ -20,7 +22,7 @@ const PROCESSING_STYLES = [
 
 const PLACEHOLDER_NOTE = "[Paste your notes here before sending this prompt to the AI]";
 
-export function GuestReviewerFlow() {
+export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: "reviewer" | "flashcards" }) {
   const [notesText, setNotesText] = useState("");
   const [style, setStyle] = useState<(typeof PROCESSING_STYLES)[number]["value"]>("balanced");
   const [prompt, setPrompt] = useState("");
@@ -31,6 +33,7 @@ export function GuestReviewerFlow() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [resultView, setResultView] = useState<"reviewer" | "flashcards">(initialView);
 
   async function handleFileUpload(file: File) {
     setUploading(true);
@@ -90,6 +93,7 @@ export function GuestReviewerFlow() {
 
   const cleanedMarkdown = stripCodeFences(pastedMarkdown);
   const isValidLength = cleanedMarkdown.trim().length >= 20;
+  const flashcards = extractFlashcardsFromMarkdown(cleanedMarkdown);
 
   return (
     <div className="space-y-5">
@@ -152,8 +156,12 @@ export function GuestReviewerFlow() {
                 <Label htmlFor="guest-reviewer-title">Title</Label>
                 <Input id="guest-reviewer-title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
-              <div className="max-h-80 overflow-y-auto rounded-lg border border-line bg-surface p-5">
-                <MarkdownRenderer content={cleanedMarkdown} />
+              <div className="flex gap-1 rounded-lg border border-line bg-surface p-1">
+                <button type="button" onClick={() => setResultView("reviewer")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "reviewer" ? "bg-ink text-white" : "text-ink-soft")}>Reviewer</button>
+                <button type="button" onClick={() => setResultView("flashcards")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "flashcards" ? "bg-ink text-white" : "text-ink-soft")}>Flashcards ({flashcards.length})</button>
+              </div>
+              <div className="max-h-[32rem] overflow-y-auto rounded-lg border border-line bg-surface p-5">
+                {resultView === "reviewer" ? <MarkdownRenderer content={cleanedMarkdown} /> : <GuestFlashcards cards={flashcards} />}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportMarkdownToPdf(title, cleanedMarkdown)}>

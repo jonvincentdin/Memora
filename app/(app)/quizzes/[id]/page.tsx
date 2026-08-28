@@ -40,7 +40,12 @@ export default async function QuizDetailPage(props: { params: Promise<{ id: stri
           <a href={`/api/quizzes/export?id=${quiz.id}&format=json`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-ink hover:bg-ink/5">
             <Download className="h-3.5 w-3.5" /> JSON
           </a>
-          <ExportQuizPdfButton title={quiz.title} questions={quiz.questions as unknown as QuizQuestion[]} />
+          <ExportQuizPdfButton
+            title={quiz.title}
+            questions={quiz.questions as unknown as QuizQuestion[]}
+            author={user.name}
+            mode={quiz.mode}
+          />
           {access === "OWNER" && <ShareDialog resourceType="QUIZ" resourceId={quiz.id} />}
           {access === "OWNER" && <DeleteQuizButton quizId={quiz.id} />}
         </div>
@@ -50,12 +55,16 @@ export default async function QuizDetailPage(props: { params: Promise<{ id: stri
       {quiz.description && <p className="mt-1 text-ink-soft">{quiz.description}</p>}
       <p className="mt-1 text-xs text-ink-faint">{questionCount} questions · updated {formatDate(quiz.updatedAt)}</p>
 
-      <Link
-        href={`/quizzes/${quiz.id}/play`}
-        className="mt-6 inline-flex h-12 items-center gap-2 rounded-lg bg-ink px-6 text-sm font-medium text-white hover:bg-ink/90"
-      >
-        <PlayCircle className="h-4 w-4" /> Start
-      </Link>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <Link href={`/quizzes/${quiz.id}/play?mode=review`} className="card p-4 hover:border-accent hover:shadow-card-hover">
+          <span className="flex items-center gap-2 font-medium text-ink"><PlayCircle className="h-4 w-4" /> Review mode</span>
+          <span className="mt-1 block text-xs text-ink-soft">Check each answer immediately and learn as you go.</span>
+        </Link>
+        <Link href={`/quizzes/${quiz.id}/play?mode=exam`} className="card p-4 hover:border-accent hover:shadow-card-hover">
+          <span className="flex items-center gap-2 font-medium text-ink"><PlayCircle className="h-4 w-4" /> Exam mode</span>
+          <span className="mt-1 block text-xs text-ink-soft">Finish the full test before seeing results or explanations.</span>
+        </Link>
+      </div>
 
       {attempts.length > 0 && (
         <div className="mt-10">
