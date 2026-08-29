@@ -53,7 +53,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const normalizedEmail = parsedEmail.data;
   const grantee = await prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } });
   if (!grantee) {
-    if (!emailDeliveryConfigured()) return NextResponse.json({ error: "That person does not have a Memora account yet. Configure email delivery to invite new users." }, { status: 409 });
+    if (!emailDeliveryConfigured()) return NextResponse.json({ error: "That person does not have a Memoria account yet. Configure email delivery to invite new users." }, { status: 409 });
     if (!(await isOwner(user.id, resourceType, body.resourceId))) return NextResponse.json({ error: "Resource not found." }, { status: 404 });
     const invite = await prisma.resourceInvite.upsert({
       where: { resourceId_resourceType_email: { resourceId: body.resourceId, resourceType, email: normalizedEmail } },
@@ -61,7 +61,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       update: { permission, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60_000) },
     });
     const registerUrl = appUrl(`/register?email=${encodeURIComponent(normalizedEmail)}`);
-    await sendTransactionalEmail({ to: normalizedEmail, subject: "You were invited to Memora", text: `Create your Memora account with ${normalizedEmail} to open the shared study material: ${registerUrl}`, html: `<p>You were invited to shared study material on Memora.</p><p><a href="${registerUrl}">Create your account</a> with this email address. The invitation expires in 7 days.</p>` });
+    await sendTransactionalEmail({ to: normalizedEmail, subject: "You were invited to Memoria", text: `Create your Memoria account with ${normalizedEmail} to open the shared study material: ${registerUrl}`, html: `<p>You were invited to shared study material on Memoria.</p><p><a href="${registerUrl}">Create your account</a> with this email address. The invitation expires in 7 days.</p>` });
     return NextResponse.json({ share: { id: invite.id, permission: invite.permission, pending: true, user: { id: "", name: "Pending invitation", email: normalizedEmail } } }, { status: 201 });
   }
 

@@ -28,7 +28,7 @@ export function AccountSettings({ initial }: { initial: { name: string; email: s
   }
 
   async function deleteAccount() {
-    if (!confirm("Permanently delete your Memora account and all its data? This cannot be undone.")) return;
+    if (!confirm("Permanently delete your Memoria account and all its data? This cannot be undone.")) return;
     setBusy("delete"); setError(null);
     try {
       const response = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: deletePassword }) });

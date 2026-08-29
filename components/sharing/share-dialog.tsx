@@ -117,7 +117,7 @@ export function ShareDialog({ resourceType, resourceId }: { resourceType: "NOTE"
 
             <div className="mt-4 border-t border-line pt-4">
               <Link href="/shared/collections" className="flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
-                <Layers className="h-3.5 w-3.5" /> Or add this to a public collection link
+                <Layers className="h-3.5 w-3.5" /> Or add this to a collection
               </Link>
             </div>
           </div>

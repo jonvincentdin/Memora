@@ -22,7 +22,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       text,
       title: title || file.name.replace(/\.[^/.]+$/, ""),
       notice: hasImages
-        ? "This file contained images. Memora only imports text, so any images were skipped — only the written content came through."
+        ? "This file contained images. Memoria only imports text, so any images were skipped — only the written content came through."
         : undefined,
     });
   } catch (err) {

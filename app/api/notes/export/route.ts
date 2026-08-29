@@ -30,7 +30,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
     return new NextResponse(payload, {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="memora-note-${filenameSafe}-v1.json"`,
+        "Content-Disposition": `attachment; filename="memoria-note-${filenameSafe}-v1.json"`,
       },
     });
   }

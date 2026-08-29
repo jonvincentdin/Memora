@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowRight, FileText, Layers, ListChecks, TrendingUp } from "lucide-react";
 
 const stack = [
-  { label: "Notes", icon: FileText, rotate: "-rotate-3", tint: "bg-white" },
-  { label: "Reviewer", icon: Layers, rotate: "rotate-2", tint: "bg-white" },
-  { label: "Quiz", icon: ListChecks, rotate: "-rotate-1", tint: "bg-white" },
+  { label: "Notes", icon: FileText, rotate: "-rotate-3", tint: "bg-surface" },
+  { label: "Reviewer", icon: Layers, rotate: "rotate-2", tint: "bg-surface" },
+  { label: "Quiz", icon: ListChecks, rotate: "-rotate-1", tint: "bg-surface" },
   { label: "Results", icon: TrendingUp, rotate: "rotate-3", tint: "bg-accent-soft" },
 ];
 

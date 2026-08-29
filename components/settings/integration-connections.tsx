@@ -37,7 +37,7 @@ export function IntegrationConnections({ initialData }: { initialData: Integrati
   return (
     <section className="mt-8">
       <div className="mb-3 flex items-center gap-2"><Cloud className="h-5 w-5 text-accent" /><h2 className="font-display text-xl text-ink">Connected accounts</h2></div>
-      <p className="mb-4 text-sm text-ink-soft">Connect your own Drive or Notion workspace. Credentials are encrypted and available only to your Memora account.</p>
+      <p className="mb-4 text-sm text-ink-soft">Connect your own Drive or Notion workspace. Credentials are encrypted and available only to your Memoria account.</p>
       <div className="space-y-3">
         {(["google", "notion"] as const).map((provider) => {
           const connection = data.connections.find((item) => item.provider === provider);

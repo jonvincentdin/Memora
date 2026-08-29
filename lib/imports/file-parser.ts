@@ -49,7 +49,7 @@ export async function extractTextFromFile(file: File): Promise<ExtractedFile> {
   const extension = getExtension(file.name);
   if (!SUPPORTED_EXTENSIONS.includes(extension as SupportedExtension)) {
     throw new FileParseError(
-      `Unsupported file type ".${extension || "unknown"}". Memora currently supports .md, .txt, .pdf, .docx, and Memora's own exported .json files.`
+      `Unsupported file type ".${extension || "unknown"}". Memoria currently supports .md, .txt, .pdf, .docx, and Memoria's own exported .json files.`
     );
   }
 
@@ -105,11 +105,11 @@ function parseJsonImport(buffer: Buffer): ExtractedFile {
   }
 
   if (!parsed || typeof parsed !== "object") {
-    throw new FileParseError("This .json file doesn't contain an object or array Memora can read notes from.");
+    throw new FileParseError("This .json file doesn't contain an object or array Memoria can read notes from.");
   }
 
   const obj = parsed as Record<string, unknown>;
-  const isMemoraExport = obj.format === "memora-note-export" || obj.format === "memora-reviewer-export";
+  const isMemoraExport = ["memoria-note-export", "memoria-reviewer-export", "memora-note-export", "memora-reviewer-export"].includes(String(obj.format));
   if (isMemoraExport && typeof obj.content === "string" && obj.content.trim()) {
     return {
       text: obj.content,
@@ -190,7 +190,7 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; hasImages
     if (!text) {
       throw new FileParseError(
         hasImages
-          ? "This PDF looks like it's made of scanned pages or images rather than selectable text — Memora can't read text out of images yet, so there was nothing to import."
+          ? "This PDF looks like it's made of scanned pages or images rather than selectable text — Memoria can't read text out of images yet, so there was nothing to import."
           : "We couldn't extract any text from this PDF. It may be a scanned image without a text layer."
       );
     }

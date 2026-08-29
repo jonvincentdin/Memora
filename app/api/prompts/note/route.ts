@@ -31,7 +31,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   if (mode === "package") {
     const text = buildSourcePackage(notes, style);
-    return NextResponse.json({ text, filename: "memora-source.txt" });
+    return NextResponse.json({ text, filename: "memoria-source.txt" });
   }
 
   const text = buildNoteReformatPrompt(notes, style);

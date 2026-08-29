@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookMarked, LayoutDashboard, FileText, Layers, ListChecks, GraduationCap, Share2, Settings, Bell } from "lucide-react";
+import { BookMarked, LayoutDashboard, FileText, Layers, ListChecks, GraduationCap, Share2, Settings, Bell, Archive } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -11,6 +11,7 @@ const links = [
   { href: "/reviewers", label: "Reviewers", icon: Layers },
   { href: "/quizzes", label: "Quizzes", icon: ListChecks },
   { href: "/study", label: "Study", icon: GraduationCap },
+  { href: "/archive", label: "Archive", icon: Archive },
   { href: "/shared", label: "Shared with Me", icon: Share2 },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -23,7 +24,7 @@ export function Sidebar() {
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <div className="flex h-16 items-center gap-2 px-6 font-display text-lg text-ink">
         <BookMarked className="h-5 w-5 text-accent-dark" />
-        Memora
+        Memoria
       </div>
       <nav className="flex-1 space-y-0.5 px-3">
         {links.map((link) => {

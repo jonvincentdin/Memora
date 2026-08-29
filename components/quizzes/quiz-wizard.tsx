@@ -320,7 +320,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
               setValidation(null);
             }}
             className="font-mono text-xs"
-            placeholder='{"format": "memora-quiz", ...}'
+            placeholder='{"format": "memoria-quiz", ...}'
           />
           <div className="mt-2 flex justify-end">
             <Button variant="outline" size="sm" onClick={handleValidate} disabled={!pastedJson.trim()}>

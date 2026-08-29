@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Link2, FileText, Cloud } from "lucide-react";
+import { Upload, Link2, FileText, Cloud, Copy, Check, AlertTriangle } from "lucide-react";
 import { FileDropzone } from "@/components/notes/file-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -30,7 +30,7 @@ const LINK_GUIDANCE: Record<Exclude<LinkType, null>, string> = {
   GOOGLE_DOCS:
     "For private Google Docs, connect your Google account and choose the document from the Connected Apps tab.",
   NOTION:
-    "Memora imports this page through your personal Notion connection. Connect Notion in Settings first.",
+    "Memoria imports this page through your personal Notion connection. Connect Notion in Settings first.",
   UNKNOWN: "We couldn't recognize this as a Google Docs or Notion link — that's fine, just paste the content below.",
 };
 
@@ -48,6 +48,10 @@ export default function ImportNotePage() {
   const [cloudProvider, setCloudProvider] = useState<"google" | "notion">("google");
   const [resources, setResources] = useState<Array<{ id: string; name: string; url?: string; modifiedTime?: string }>>([]);
   const [selectedResource, setSelectedResource] = useState("");
+  const [imageWarning, setImageWarning] = useState<{ prompt: string; errors: Array<{ filename: string; error: string }> } | null>(null);
+  const [showOcrHelp, setShowOcrHelp] = useState(false);
+  const [ocrResult, setOcrResult] = useState("");
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const linkType = useMemo(() => detectLinkType(link), [link]);
 
@@ -56,9 +60,31 @@ export default function ImportNotePage() {
     setError(null);
     setNotice(null);
     setStatus("processing");
+    try {
+      const previewForm = new FormData();
+      for (const selected of files.length ? files : [file]) previewForm.append("file", selected);
+      previewForm.append("mode", "preview");
+      const previewResponse = await fetch("/api/notes/import", { method: "POST", body: previewForm });
+      const preview = await previewResponse.json().catch(() => null);
+      if (!previewResponse.ok || !preview) throw new Error(preview?.error ?? "Import preview failed.");
+      if (preview.hasImageIssue) {
+        setImageWarning({ prompt: preview.extractionPrompt ?? "Extract all text from these images as Markdown.", errors: preview.errors ?? [] });
+        setStatus("idle");
+        return;
+      }
+      await performFileImport(false);
+    } catch (caught) {
+      setStatus("failed");
+      setError(caught instanceof Error ? caught.message : "We couldn't reach the server. Check your connection and try again.");
+    }
+  }
+
+  async function performFileImport(confirmPartial: boolean) {
+    if (!file) return;
+    setStatus("processing"); setError(null);
     const form = new FormData();
     for (const selected of files.length ? files : [file]) form.append("file", selected);
-
+    if (confirmPartial) form.append("confirmPartial", "true");
     try {
       const res = await fetch("/api/notes/import", { method: "POST", body: form });
       const data = await res.json().catch(() => null);
@@ -72,13 +98,23 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      if (data.errors?.length) setNotice(`${data.notes?.length ?? 0} imported; ${data.errors.length} failed. ${data.errors[0].error}`);
-      if (data.notes?.length > 1) router.push("/notes");
-      else router.push(`/notes/${data.note.id}`);
+      if (data.errors?.length) setNotice(`${(data.notes?.length ?? 0) + (data.restored?.length ?? 0)} imported; ${data.errors.length} failed. ${data.errors[0].error}`);
+      if (data.redirect) router.push(data.redirect);
+      else if ((data.notes?.length ?? 0) + (data.restored?.length ?? 0) > 1) router.push("/dashboard");
+      else if (data.note) router.push(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
     }
+  }
+
+  async function saveOcrResult() {
+    if (!ocrResult.trim()) return;
+    setStatus("processing");
+    const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: file?.name.replace(/\.[^/.]+$/, "") || "OCR import", content: ocrResult.trim() }) });
+    const data = await response.json().catch(() => null);
+    if (response.ok) router.push(`/notes/${data.note.id}`);
+    else { setStatus("failed"); setError(data?.error ?? "Couldn't save the extracted text."); }
   }
 
   async function handleNotionImport() {
@@ -229,7 +265,7 @@ export default function ImportNotePage() {
           <>
             <FileDropzone onFileSelected={setFile} onFilesSelected={setFiles} multiple accept=".md,.txt,.pdf,.docx,.json" />
             <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-faint">
-              <FileText className="h-3.5 w-3.5" /> Supports .md, .txt, .pdf, .docx, and Memora&apos;s own exported .json files
+              <FileText className="h-3.5 w-3.5" /> Supports .md, .txt, .pdf, .docx, and Memoria&apos;s own exported .json files
             </p>
             <p className="mt-1 text-xs text-ink-faint">
               Only text is imported — if a PDF or Word file has images (like a scanned page), those are skipped and
@@ -325,6 +361,14 @@ export default function ImportNotePage() {
           </>
         )}
       </div>
+      {imageWarning && <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="image-import-title">
+        <div className="card max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6 shadow-card-hover">
+          <div className="flex items-start gap-3"><span className="rounded-full bg-accent-soft p-2 text-accent-dark"><AlertTriangle className="h-5 w-5" /></span><div><h2 id="image-import-title" className="font-display text-xl text-ink">Some image content could not be extracted</h2><p className="mt-1 text-sm text-ink-soft">Text embedded in images, scans, charts, or photographed pages may be missing. Nothing will be imported until you choose how to continue.</p></div></div>
+          {imageWarning.errors.length > 0 && <ul className="mt-4 list-disc space-y-1 pl-5 text-xs text-danger">{imageWarning.errors.map((item) => <li key={item.filename}>{item.filename}: {item.error}</li>)}</ul>}
+          {!showOcrHelp ? <div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={() => { setImageWarning(null); void performFileImport(true); }} className="rounded-lg border border-line p-4 text-left hover:border-accent"><span className="block font-medium text-ink">Continue with partial text</span><span className="mt-1 block text-xs text-ink-soft">Import only the text Memoria could read.</span></button><button onClick={() => setShowOcrHelp(true)} className="rounded-lg border border-accent bg-accent-soft/30 p-4 text-left"><span className="block font-medium text-ink">Use an AI/OCR tool</span><span className="mt-1 block text-xs text-ink-soft">Copy a prepared prompt, then paste the completed extraction back.</span></button></div> : <div className="mt-5"><div className="flex items-center justify-between"><Label htmlFor="ocr-prompt">Extraction prompt</Label><button onClick={async () => { await navigator.clipboard.writeText(imageWarning.prompt); setPromptCopied(true); setTimeout(() => setPromptCopied(false), 1500); }} className="inline-flex items-center gap-1 text-xs font-medium text-accent-dark">{promptCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{promptCopied ? "Copied" : "Copy prompt"}</button></div><Textarea id="ocr-prompt" readOnly rows={7} value={imageWarning.prompt} className="mt-1 font-mono text-xs" /><div className="mt-4"><Label htmlFor="ocr-result">Paste the completed Markdown</Label><Textarea id="ocr-result" rows={8} value={ocrResult} onChange={(event) => setOcrResult(event.target.value)} placeholder="# Extracted lesson…" className="mt-1 font-mono text-sm" /></div></div>}
+          <div className="mt-6 flex justify-end gap-2"><Button variant="ghost" onClick={() => { setImageWarning(null); setShowOcrHelp(false); }}>Cancel</Button>{showOcrHelp && <Button onClick={saveOcrResult} disabled={!ocrResult.trim()} loading={status === "processing"}>Save completed import</Button>}</div>
+        </div>
+      </div>}
     </div>
   );
 }

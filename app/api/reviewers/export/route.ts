@@ -38,7 +38,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   return new NextResponse(JSON.stringify(exportReviewerAsJson(reviewer)), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="memora-reviewer-${filenameSafe}-v1.json"`,
+      "Content-Disposition": `attachment; filename="memoria-reviewer-${filenameSafe}-v1.json"`,
     },
   });
 });

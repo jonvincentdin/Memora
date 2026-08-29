@@ -104,7 +104,7 @@ export function PomodoroTimer() {
     if (!originalTitle.current) originalTitle.current = document.title;
     const minutes = Math.floor(remaining / 60);
     const seconds = remaining % 60;
-    document.title = `${minutes}:${String(seconds).padStart(2, "0")} · ${MODE_LABELS[mode]} | Memora`;
+    document.title = `${minutes}:${String(seconds).padStart(2, "0")} · ${MODE_LABELS[mode]} | Memoria`;
   }, [mode, remaining, running]);
 
   useEffect(() => () => { if (originalTitle.current) document.title = originalTitle.current; }, []);

@@ -1,4 +1,4 @@
-// Memora database schema
+// Memoria database schema
 // See README.md section "Database Setup" for migration instructions.
 
 generator client {
@@ -14,35 +14,40 @@ datasource db {
 // Users
 // ---------------------------------------------------------------------------
 model User {
-  id                String    @id @default(cuid())
-  name              String
-  email             String    @unique
-  passwordHash      String
-  image             String?
-  emailVerified     DateTime?
-  passwordChangedAt DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  image                 String?
+  emailVerified         DateTime?
+  passwordChangedAt     DateTime?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  notes             Note[]
-  reviewers         Reviewer[]
-  quizzes           Quiz[]
-  quizAttempts      QuizAttempt[]
-  sharesGiven       ResourceShare[]         @relation("SharesGivenByOwner")
-  sharesGranted     ResourceShare[]         @relation("SharesGrantedToUser")
-  settings          UserSettings?
-  collections       ShareCollection[]
-  integrations      IntegrationConnection[]
-  accountTokens     AccountToken[]
-  flashcards        Flashcard[]
-  flashcardProgress FlashcardProgress[]
-  flashcardReviews  FlashcardReview[]
-  studySessions     StudySession[]
-  tags              Tag[]
-  revisions         ResourceRevision[]
-  notifications     Notification[]
-  aiConnections     AiConnection[]
-  invitesGiven      ResourceInvite[] @relation("ResourceInvitesGiven")
+  notes                 Note[]
+  reviewers             Reviewer[]
+  quizzes               Quiz[]
+  quizAttempts          QuizAttempt[]
+  sharesGiven           ResourceShare[]         @relation("SharesGivenByOwner")
+  sharesGranted         ResourceShare[]         @relation("SharesGrantedToUser")
+  settings              UserSettings?
+  collections           ShareCollection[]
+  integrations          IntegrationConnection[]
+  accountTokens         AccountToken[]
+  flashcards            Flashcard[]
+  flashcardProgress     FlashcardProgress[]
+  flashcardReviews      FlashcardReview[]
+  studySessions         StudySession[]
+  tags                  Tag[]
+  revisions             ResourceRevision[]
+  notifications         Notification[]
+  aiConnections         AiConnection[]
+  invitesGiven          ResourceInvite[]        @relation("ResourceInvitesGiven")
+  collectionMemberships ShareCollectionMember[]
+  feedbackPosts         ShareFeedback[]         @relation("FeedbackAuthor")
+  feedbackReports       FeedbackReport[]
+  activeSessions        ActiveSession[]
 
   @@map("users")
 }
@@ -125,6 +130,18 @@ model UserSettings {
   @@map("user_settings")
 }
 
+model ActiveSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId, lastSeenAt])
+  @@map("active_sessions")
+}
+
 enum Appearance {
   LIGHT
   DARK
@@ -155,8 +172,8 @@ model Note {
   reviewerLinks ReviewerNote[]
   tags          NoteTag[]
 
-  @@index([ownerId, archivedAt, updatedAt])
   @@unique([ownerId, sourceType, sourceExternalId])
+  @@index([ownerId, archivedAt, updatedAt])
   @@map("notes")
 }
 
@@ -227,7 +244,7 @@ model Quiz {
   description   String?
   mode          QuizMode  @default(QUIZ)
   configuration Json // question count, difficulty, distribution, randomization, timing, attempts
-  questions     Json // validated array of Memora quiz question objects
+  questions     Json // validated array of Memoria quiz question objects
   archivedAt    DateTime?
   isFavorite    Boolean   @default(false)
   createdAt     DateTime  @default(now())
@@ -500,9 +517,8 @@ model ResourceInvite {
 }
 
 // ---------------------------------------------------------------------------
-// Public collections — an owner picks a set of notes/reviewers/quizzes and
-// publishes them at a single public, read-only URL (/c/[slug]). No account
-// is required to view a collection or leave feedback on it.
+// Collections can be published at a public URL or privately shared with
+// specific Memoria users.
 // ---------------------------------------------------------------------------
 model ShareCollection {
   id           String    @id @default(cuid())
@@ -519,9 +535,23 @@ model ShareCollection {
 
   items    ShareCollectionItem[]
   feedback ShareFeedback[]
+  members  ShareCollectionMember[]
 
   @@index([ownerId])
   @@map("share_collections")
+}
+
+model ShareCollectionMember {
+  id           String          @id @default(cuid())
+  collectionId String
+  collection   ShareCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
+
+  @@unique([collectionId, userId])
+  @@index([userId, createdAt])
+  @@map("share_collection_members")
 }
 
 // A resource (note/reviewer/quiz) included in a collection. resourceId is a
@@ -545,17 +575,40 @@ model ShareCollectionItem {
 // scoped to a single item within the collection (e.g. a comment on one
 // specific note) or left general (resourceId null) for the collection as a whole.
 model ShareFeedback {
-  id           String          @id @default(cuid())
+  id           String           @id @default(cuid())
   collectionId String
-  collection   ShareCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  collection   ShareCollection  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   resourceType ResourceType?
   resourceId   String?
   authorName   String?
+  authorUserId String?
+  authorUser   User?            @relation("FeedbackAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  parentId     String?
+  parent       ShareFeedback?   @relation("FeedbackThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      ShareFeedback[]  @relation("FeedbackThread")
   message      String
-  createdAt    DateTime        @default(now())
+  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime         @default(now())
+  reports      FeedbackReport[]
 
   @@index([collectionId])
+  @@index([parentId, createdAt])
+  @@index([authorUserId])
   @@map("share_feedback")
+}
+
+model FeedbackReport {
+  id         String        @id @default(cuid())
+  feedbackId String
+  feedback   ShareFeedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason     String?
+  createdAt  DateTime      @default(now())
+
+  @@unique([feedbackId, userId])
+  @@index([userId, createdAt])
+  @@map("feedback_reports")
 }
 
 // Durable fixed-window counters shared by every serverless instance.

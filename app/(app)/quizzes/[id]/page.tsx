@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, PlayCircle } from "lucide-react";
+import { ArrowLeft, PlayCircle } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { getAccessLevelForOwner } from "@/lib/permissions";
@@ -40,10 +40,8 @@ export default async function QuizDetailPage(props: { params: Promise<{ id: stri
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Badge tone="neutral">{quiz.mode.replace("_", " ")}</Badge>
         <div className="flex items-center gap-2">
-          <a href={`/api/quizzes/export?id=${quiz.id}&format=json`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-ink hover:bg-ink/5">
-            <Download className="h-3.5 w-3.5" /> JSON
-          </a>
           <ExportQuizPdfButton
+            quizId={quiz.id}
             title={quiz.title}
             questions={quiz.questions as unknown as QuizQuestion[]}
             author={user.name}

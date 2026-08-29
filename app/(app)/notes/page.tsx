@@ -16,12 +16,11 @@ const sourceLabels: Record<string, string> = {
   MANUAL: "Manual",
 };
 
-export default async function NotesPage({ searchParams }: { searchParams: Promise<{ view?: string; page?: string }> }) {
+export default async function NotesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const query = await searchParams;
   const user = await requireUser();
-  const archived = query.view === "archived";
   const page = Math.max(1, Number(query.page) || 1);
-  const notes = await findNoteSummariesByOwner(user.id, { archived, page, pageSize: 24 });
+  const notes = await findNoteSummariesByOwner(user.id, { archived: false, page, pageSize: 24 });
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -37,7 +36,7 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
           <Plus className="h-4 w-4" /> Import note
         </Link>
       </div>
-      <div className="mb-5"><LibraryNavigation basePath="/notes" archived={archived} page={page} hasNext={notes.length === 24} /></div>
+      <div className="mb-5"><LibraryNavigation basePath="/notes" page={page} hasNext={notes.length === 24} /></div>
 
       {notes.length === 0 ? (
         <EmptyState

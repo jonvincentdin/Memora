@@ -37,7 +37,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
         note,
         status: refreshed ? "refreshed" : "complete",
         notice: hasImages
-          ? "This page contained images. Memora only imports text, so any images were skipped — only the written content came through."
+          ? "This page contained images. Memoria only imports text, so any images were skipped — only the written content came through."
           : undefined,
       },
       { status: refreshed ? 200 : 201 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Download, FileJson, FileText } from "lucide-react";
+import { Check, Copy, FileJson, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { FileDropzone } from "@/components/notes/file-dropzone";
@@ -9,6 +9,7 @@ import { QuestionInput } from "@/components/quizzes/question-input";
 import { parseAiJson, validateStructuredQuiz, type StructuredQuiz } from "@/lib/validation/quiz";
 import { formatCorrectAnswer, gradeQuiz, isAnswerCorrect } from "@/lib/quiz-grading";
 import { cn } from "@/lib/utils";
+import { ExportMenu } from "@/components/exports/export-menu";
 
 const QUESTION_TYPES = [
   ["multiple_choice", "Multiple choice"],
@@ -186,13 +187,20 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
     exportQuizToPdf(quiz.title, quiz.questions, { mode: quiz.settings.mode, author: "Guest" });
   }
 
+  async function exportQuiz(format: string) {
+    if (!quiz) return;
+    if (format === "pdf") return exportPdf();
+    if (format === "docx") { const { exportQuizToWord } = await import("@/lib/word-export"); await exportQuizToWord(quiz.title, quiz.questions, { mode: quiz.settings.mode, author: "Guest" }); return; }
+    downloadJson();
+  }
+
   return (
     <div className="space-y-5">
       <div className="card p-5">
         <p className="text-sm font-medium text-ink">How would you like to create this {activityLabel}?</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <SourceButton active={source === "generate"} onClick={() => setSource("generate")} icon={<FileText className="mb-2 h-5 w-5" />} title="Generate with AI" description="Build a tailored prompt from notes or a topic." />
-          <SourceButton active={source === "import"} onClick={() => setSource("import")} icon={<FileJson className="mb-2 h-5 w-5" />} title="Import JSON" description="Open a Memora quiz file directly in this browser." />
+          <SourceButton active={source === "import"} onClick={() => setSource("import")} icon={<FileJson className="mb-2 h-5 w-5" />} title="Import JSON" description="Open a Memoria quiz file directly in this browser." />
         </div>
       </div>
 
@@ -215,7 +223,7 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
         </div>
       ) : (
         <div className="card p-5">
-          <p className="text-sm font-medium text-ink">Import a Memora JSON file</p>
+          <p className="text-sm font-medium text-ink">Import a Memoria JSON file</p>
           <p className="mt-1 text-xs text-ink-soft">The file stays in your browser and is not uploaded.</p>
           <Input className="mt-3" type="file" accept=".json,application/json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleJsonFile(file); }} />
         </div>
@@ -225,7 +233,7 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
         <div className="card p-5">
           {source === "generate" && <><p className="mb-2 text-sm font-medium text-ink">2. Copy this prompt into your preferred AI</p><Textarea readOnly rows={10} value={prompt} className="font-mono text-xs" /><Button variant="outline" size="sm" className="mt-2" onClick={copyPrompt}>{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copied" : "Copy prompt"}</Button></>}
           <p className={cn("mb-2 text-sm font-medium text-ink", source === "generate" && "mt-5")}>{source === "generate" ? "3. Paste the AI's JSON response" : "Or paste JSON below"}</p>
-          <Textarea rows={8} value={pastedJson} onChange={(event) => { setPastedJson(event.target.value); setValidation(null); }} placeholder='{"format": "memora-quiz", ...}' className="font-mono text-xs" />
+          <Textarea rows={8} value={pastedJson} onChange={(event) => { setPastedJson(event.target.value); setValidation(null); }} placeholder='{"format": "memoria-quiz", ...}' className="font-mono text-xs" />
           <Button variant="outline" size="sm" className="mt-2" onClick={() => validateJson()} disabled={!pastedJson.trim()}>Validate</Button>
 
           {validation && !validation.valid && <div className="mt-3 rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger"><p className="font-medium">This doesn&apos;t match the expected format:</p><ul className="mt-1 list-disc pl-5">{validation.errors.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ul></div>}
@@ -234,7 +242,7 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
             <div className="mt-4 space-y-4">
               <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">{quiz.questions.length} questions parsed and ready.</div>
               <div><p className="mb-2 text-sm font-medium text-ink">Choose a test-taking mode</p><div className="grid gap-3 sm:grid-cols-2"><ModeButton onClick={() => startTest("review")} title="Review mode" description="Check each response and see explanations immediately." /><ModeButton onClick={() => startTest("exam")} title="Exam mode" description="No feedback until the final submission." /></div></div>
-              <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void exportPdf()}><FileText className="h-3.5 w-3.5" /> Export PDF</Button><Button variant="outline" size="sm" onClick={downloadJson}><Download className="h-3.5 w-3.5" /> Export JSON</Button></div>
+              <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "json", label: "Memoria JSON" }]} onExport={exportQuiz} />
             </div>
           )}
 

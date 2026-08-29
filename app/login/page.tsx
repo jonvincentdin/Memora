@@ -45,7 +45,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2 font-display text-lg text-ink">
           <BookMarked className="h-5 w-5 text-accent-dark" />
-          Memora
+          Memoria
         </Link>
         <div className="card p-7">
           <h1 className="font-display text-xl text-ink">Welcome back</h1>
@@ -84,7 +84,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-ink-soft">
-            New to Memora?{" "}
+            New to Memoria?{" "}
             <Link href="/register" className="font-medium text-ink hover:underline">
               Create an account
             </Link>

@@ -114,7 +114,7 @@ export async function notionFetch(path: string, accessToken: string, init?: Requ
 
   if (res.status === 404) {
     throw new NotionImportError(
-      "Memora couldn't find that page. Make sure it's shared with the Memora Notion integration (••• menu → Connections → add it) and try again."
+      "Memoria couldn't find that page. Make sure it's shared with the Memoria Notion integration (••• menu → Connections → add it) and try again."
     );
   }
   if (res.status === 401 || res.status === 403) {
@@ -182,7 +182,7 @@ async function blocksToMarkdown(blockId: string, accessToken: string, depth = 0)
           break;
         case "image":
           // Images aren't imported — see the "images aren't supported" notice surfaced to the user.
-          lines.push(`${indent}*[image omitted — Memora only imports text]*`);
+          lines.push(`${indent}*[image omitted — Memoria only imports text]*`);
           break;
         case "child_page":
           // Intentionally NOT recursed into — importing a page must only

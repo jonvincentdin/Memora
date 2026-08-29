@@ -34,7 +34,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   return new NextResponse(JSON.stringify(exportQuizAsJson(quiz), null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="memora-quiz-${filenameSafe}-v1.json"`,
+      "Content-Disposition": `attachment; filename="memoria-quiz-${filenameSafe}-v1.json"`,
     },
   });
 });

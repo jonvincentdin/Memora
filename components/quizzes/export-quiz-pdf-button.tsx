@@ -1,30 +1,13 @@
 "use client";
 
-import { FileText } from "lucide-react";
 import type { QuizQuestion } from "@/lib/validation/quiz";
+import { ExportMenu } from "@/components/exports/export-menu";
 
-export function ExportQuizPdfButton({
-  title,
-  questions,
-  author,
-  mode,
-}: {
-  title: string;
-  questions: QuizQuestion[];
-  author?: string | null;
-  mode?: string;
-}) {
-  async function handleExport() {
-    const { exportQuizToPdf } = await import("@/lib/pdf-export");
-    exportQuizToPdf(title, questions, { author, mode });
+export function ExportQuizPdfButton({ quizId, title, questions, author, mode }: { quizId: string; title: string; questions: QuizQuestion[]; author?: string | null; mode?: string }) {
+  async function handleExport(format: string) {
+    if (format === "pdf") { const { exportQuizToPdf } = await import("@/lib/pdf-export"); exportQuizToPdf(title, questions, { author, mode }); return; }
+    if (format === "docx") { const { exportQuizToWord } = await import("@/lib/word-export"); await exportQuizToWord(title, questions, { author, mode }); return; }
+    window.location.href = `/api/quizzes/export?id=${quizId}&format=${format}`;
   }
-
-  return (
-    <button
-      onClick={() => void handleExport()}
-      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-ink hover:bg-ink/5"
-    >
-      <FileText className="h-3.5 w-3.5" /> PDF
-    </button>
-  );
+  return <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "json", label: "Memoria JSON" }, { value: "txt", label: "Plain text" }]} onExport={handleExport} />;
 }

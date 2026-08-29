@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Copy, Check, Trash2, ExternalLink, ArrowLeft, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { Input, Label, Textarea } from "@/components/ui/input";
+import { ExportMenu } from "@/components/exports/export-menu";
 
 type ResourceType = "NOTE" | "REVIEWER" | "QUIZ";
 interface CollectionItem { id: string; resourceType: ResourceType; resourceId: string }
@@ -20,6 +21,7 @@ interface Collection {
   expiresAt: string | null;
   passwordProtected: boolean;
   items: CollectionItem[];
+  members: Array<{ id: string; name: string; email: string }>;
 }
 interface PickerRow { id: string; title: string }
 interface FeedbackRow { id: string; authorName: string | null; message: string; createdAt: string }
@@ -52,6 +54,17 @@ export function CollectionEditor({
   const [password, setPassword] = useState("");
   const [expiresAt, setExpiresAt] = useState(initialCollection.expiresAt?.slice(0, 10) ?? "");
   const [savingSettings, setSavingSettings] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [sharingPrivately, setSharingPrivately] = useState(false);
+  const [highlightedFeedback, setHighlightedFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    const feedbackId = new URLSearchParams(window.location.search).get("feedback");
+    if (!feedbackId) return;
+    setHighlightedFeedback(feedbackId);
+    window.setTimeout(() => document.getElementById(`feedback-${feedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    window.setTimeout(() => setHighlightedFeedback(null), 4000);
+  }, []);
   const publicPath = `/c/${collection.slug}`;
 
   function isIncluded(resourceType: ResourceType, resourceId: string) {
@@ -151,6 +164,33 @@ export function CollectionEditor({
     window.setTimeout(() => setCopied(false), 1500);
   }
 
+  async function exportCollection(format: string) {
+    if (format === "json") { window.location.href = `/api/collections/${collection.id}/export?format=json`; return; }
+    const response = await fetch(`/api/collections/${collection.id}/export`);
+    const data = await response.json().catch(() => null);
+    if (!response.ok) { setError(data?.error ?? "Couldn't export this collection."); return; }
+    if (format === "pdf") { const { exportMarkdownToPdf } = await import("@/lib/pdf-export"); exportMarkdownToPdf(data.title, data.markdown); }
+    if (format === "docx") { const { exportMarkdownToWord } = await import("@/lib/word-export"); await exportMarkdownToWord(data.title, data.markdown); }
+  }
+
+  async function addMember() {
+    if (!memberEmail.trim()) return;
+    setSharingPrivately(true); setError(null);
+    const response = await fetch(`/api/collections/${collection.id}/members`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: memberEmail.trim() }) });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) setError(data?.error ?? "Couldn't share this collection.");
+    else {
+      setCollection((current) => ({ ...current, members: current.members.some((member) => member.id === data.member.id) ? current.members : [...current.members, { id: data.member.id, name: data.member.user.name, email: data.member.user.email }] }));
+      setMemberEmail("");
+    }
+    setSharingPrivately(false);
+  }
+
+  async function removeMember(memberId: string) {
+    const response = await fetch(`/api/collections/${collection.id}/members?memberId=${memberId}`, { method: "DELETE" });
+    if (response.ok) setCollection((current) => ({ ...current, members: current.members.filter((member) => member.id !== memberId) }));
+  }
+
   const counts = { NOTE: 0, REVIEWER: 0, QUIZ: 0 } as Record<ResourceType, number>;
   collection.items.forEach((item) => (counts[item.resourceType] += 1));
 
@@ -167,6 +207,7 @@ export function CollectionEditor({
           </p>
         </div>
         <Badge tone={collection.isPublished ? "accent" : "neutral"}>{collection.isPublished ? "Published" : "Draft"}</Badge>
+        <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "json", label: "Memoria JSON" }]} onExport={exportCollection} />
       </div>
 
       <div className="card mt-5 flex flex-wrap items-center justify-between gap-3 p-4">
@@ -188,6 +229,13 @@ export function CollectionEditor({
         </div>
       </div>
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+
+      <div className="card mt-5 p-5">
+        <h2 className="font-display text-lg text-ink">Private sharing</h2>
+        <p className="mt-1 text-sm text-ink-soft">Give specific Memoria users access without publishing the link. They receive a notification immediately.</p>
+        <div className="mt-4 flex gap-2"><Input type="email" value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addMember()} placeholder="person@example.com" aria-label="User email" /><Button onClick={addMember} loading={sharingPrivately} disabled={!memberEmail.trim()}>Share</Button></div>
+        {collection.members.length > 0 && <div className="mt-4 divide-y divide-line rounded-lg border border-line">{collection.members.map((member) => <div key={member.id} className="flex items-center justify-between gap-3 px-3 py-2.5"><div className="min-w-0"><p className="truncate text-sm font-medium text-ink">{member.name}</p><p className="truncate text-xs text-ink-faint">{member.email}</p></div><button onClick={() => removeMember(member.id)} className="text-xs font-medium text-danger hover:underline">Remove</button></div>)}</div>}
+      </div>
 
       <div className="card mt-5 p-5"><h2 className="font-display text-lg text-ink">Collection settings</h2><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><Label htmlFor="collection-title">Title</Label><Input id="collection-title" value={title} onChange={(event) => setTitle(event.target.value)} /></div><div><Label htmlFor="collection-expiry">Link expires (optional)</Label><Input id="collection-expiry" type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></div><div className="sm:col-span-2"><Label htmlFor="collection-description">Description</Label><Textarea id="collection-description" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} /></div><div><Label htmlFor="collection-password">{collection.passwordProtected ? "Replace password" : "Password (optional)"}</Label><Input id="collection-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></div></div><div className="mt-4 flex gap-2"><Button onClick={saveSettings} loading={savingSettings}>Save settings</Button>{collection.passwordProtected && <Button variant="ghost" onClick={clearPassword}>Remove password</Button>}</div></div>
 
@@ -236,7 +284,7 @@ export function CollectionEditor({
       ) : (
         <div className="mt-2 space-y-2">
           {feedback.map((item) => (
-            <div key={item.id} className="card flex items-start justify-between gap-3 p-3.5">
+            <div id={`feedback-${item.id}`} key={item.id} className={cn("card flex items-start justify-between gap-3 p-3.5 transition-shadow", highlightedFeedback === item.id && "ring-2 ring-accent")}>
               <div><p className="text-sm text-ink">{item.message}</p><p className="mt-1 text-xs text-ink-faint">{item.authorName || "Anonymous"} · {formatRelativeTime(item.createdAt)}</p></div>
               <button aria-label="Delete feedback" className="text-ink-faint hover:text-danger" onClick={() => removeFeedback(item.id)}><Trash2 className="h-4 w-4" /></button>
             </div>

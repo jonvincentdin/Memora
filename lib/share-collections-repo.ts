@@ -24,14 +24,14 @@ export async function listCollectionsForOwner(ownerId: string) {
   return prisma.shareCollection.findMany({
     where: { ownerId },
     orderBy: { updatedAt: "desc" },
-    include: { _count: { select: { items: true, feedback: true } } },
+    include: { _count: { select: { items: true, feedback: true, members: true } } },
   });
 }
 
 export async function findCollectionForOwner(ownerId: string, id: string) {
   return prisma.shareCollection.findFirst({
     where: { id, ownerId },
-    include: { items: { orderBy: { position: "asc" } } },
+    include: { items: { orderBy: { position: "asc" } }, members: { include: { user: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" } } },
   });
 }
 
@@ -45,7 +45,7 @@ export async function getCollectionEditorData(ownerId: string, id: string) {
     prisma.shareFeedback.findMany({
       where: { collectionId: id, collection: { ownerId } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, authorName: true, message: true, createdAt: true },
+      select: { id: true, authorName: true, authorUserId: true, message: true, createdAt: true, updatedAt: true, parentId: true },
     }),
   ]);
 
@@ -144,7 +144,9 @@ export interface PublicCollection {
   notes: PublicCollectionNote[];
   reviewers: PublicCollectionReviewer[];
   quizzes: PublicCollectionQuiz[];
-  feedback: { id: string; authorName: string | null; message: string; createdAt: Date }[];
+  feedback: { id: string; authorName: string | null; authorUserId: string | null; message: string; createdAt: Date; updatedAt: Date; parentId: string | null }[];
+  viewerUserId: string | null;
+  isPrivateAccess: boolean;
 }
 
 /**
@@ -152,16 +154,19 @@ export interface PublicCollection {
  * items the owner explicitly added, hydrated read-only, and only when the
  * collection is published. Never exposes anything the owner didn't pick.
  */
-export async function getPublicCollectionBySlug(slug: string, allowProtected = false): Promise<PublicCollection | null> {
+export async function getPublicCollectionBySlug(slug: string, allowProtected = false, viewerUserId?: string): Promise<PublicCollection | null> {
   const collection = await prisma.shareCollection.findUnique({
     where: { slug },
     include: {
       owner: { select: { name: true } },
       items: { orderBy: { position: "asc" } },
-      feedback: { orderBy: { createdAt: "desc" }, select: { id: true, authorName: true, message: true, createdAt: true } },
+      feedback: { orderBy: { createdAt: "asc" }, select: { id: true, authorName: true, authorUserId: true, message: true, createdAt: true, updatedAt: true, parentId: true } },
+      members: viewerUserId ? { where: { userId: viewerUserId }, select: { id: true } } : false,
     },
   });
-  if (!collection || !collection.isPublished || (collection.expiresAt && collection.expiresAt <= new Date()) || (collection.passwordHash && !allowProtected)) return null;
+  if (!collection) return null;
+  const isPrivateAccess = collection.ownerId === viewerUserId || ("members" in collection && Array.isArray(collection.members) && collection.members.length > 0);
+  if ((!collection.isPublished && !isPrivateAccess) || (collection.expiresAt && collection.expiresAt <= new Date()) || (collection.passwordHash && !allowProtected && !isPrivateAccess)) return null;
 
   const noteIds = collection.items.filter((i) => i.resourceType === "NOTE").map((i) => i.resourceId);
   const reviewerIds = collection.items.filter((i) => i.resourceType === "REVIEWER").map((i) => i.resourceId);
@@ -188,11 +193,13 @@ export async function getPublicCollectionBySlug(slug: string, allowProtected = f
     slug: collection.slug,
     title: collection.title,
     description: collection.description,
-    ownerName: collection.owner.name ?? "A Memora user",
+    ownerName: collection.owner.name ?? "A Memoria user",
     notes: byOrder(rawNotes.map((n) => ({ ...n, content: decompressText(n.content) }))),
     reviewers: byOrder(rawReviewers.map((r) => ({ ...r, content: decompressText(r.content) }))),
     quizzes: byOrder(rawQuizzes),
     feedback: collection.feedback,
+    viewerUserId: viewerUserId ?? null,
+    isPrivateAccess,
   };
 }
 
@@ -202,9 +209,12 @@ export async function addFeedback(params: {
   message: string;
   resourceType?: ResourceType;
   resourceId?: string;
+  authorUserId?: string;
+  parentId?: string;
 }) {
   const collection = await prisma.shareCollection.findUnique({ where: { slug: params.slug } });
-  if (!collection || !collection.isPublished || (collection.expiresAt && collection.expiresAt <= new Date())) throw new Error("Collection not found.");
+  const privateMember = params.authorUserId ? await prisma.shareCollectionMember.findUnique({ where: { collectionId_userId: { collectionId: collection?.id ?? "", userId: params.authorUserId } } }) : null;
+  if (!collection || (!collection.isPublished && !privateMember && collection.ownerId !== params.authorUserId) || (collection.expiresAt && collection.expiresAt <= new Date())) throw new Error("Collection not found.");
 
   if (params.resourceType && params.resourceId) {
     const included = await prisma.shareCollectionItem.findUnique({
@@ -220,15 +230,22 @@ export async function addFeedback(params: {
     if (!included) throw new Error("That resource is not part of this collection.");
   }
 
+  if (params.parentId) {
+    const parent = await prisma.shareFeedback.findFirst({ where: { id: params.parentId, collectionId: collection.id }, select: { id: true } });
+    if (!parent) throw new Error("Feedback thread not found.");
+  }
+
   const feedback = await prisma.shareFeedback.create({
     data: {
       collectionId: collection.id,
       authorName: params.authorName?.trim() || null,
+      authorUserId: params.authorUserId,
+      parentId: params.parentId,
       message: params.message,
       resourceType: params.resourceType,
       resourceId: params.resourceId,
     },
   });
-  await prisma.notification.create({ data: { userId: collection.ownerId, type: "COLLECTION_FEEDBACK", title: "New collection feedback", message: params.message.slice(0, 160), href: `/shared/collections/${collection.id}` } });
+  if (collection.ownerId !== params.authorUserId) await prisma.notification.create({ data: { userId: collection.ownerId, type: "COLLECTION_FEEDBACK", title: params.parentId ? "New feedback reply" : "New collection feedback", message: params.message.slice(0, 160), href: `/shared/collections/${collection.id}?feedback=${feedback.id}` } });
   return feedback;
 }

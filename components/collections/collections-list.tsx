@@ -15,7 +15,7 @@ interface CollectionSummary {
   slug: string;
   isPublished: boolean;
   updatedAt: string;
-  _count: { items: number; feedback: number };
+  _count: { items: number; feedback: number; members: number };
 }
 
 export function CollectionsList({ initialCollections }: { initialCollections: CollectionSummary[] }) {
@@ -42,7 +42,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
         setError(data.error ?? "Couldn't create collection.");
       } else {
         setCollections((current) => [
-          { ...data.collection, updatedAt: new Date(data.collection.updatedAt).toISOString(), _count: { items: 0, feedback: 0 } },
+          { ...data.collection, updatedAt: new Date(data.collection.updatedAt).toISOString(), _count: { items: 0, feedback: 0, members: 0 } },
           ...current,
         ]);
         setTitle("");
@@ -59,10 +59,9 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl text-ink">Public collections</h1>
+          <h1 className="font-display text-2xl text-ink">Collections</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            Bundle specific notes, reviewers, and quizzes into one public, read-only link. Anyone with the link can
-            view and leave feedback — nothing they do can change your library.
+            Bundle notes, reviewers, and quizzes, then share privately with specific people or publish a read-only link.
           </p>
         </div>
         <Button onClick={() => setCreating((value) => !value)}>
@@ -94,7 +93,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
         <div className="mt-6">
           <EmptyState
             icon={FolderOpen}
-            title="No public collections yet."
+            title="No collections yet."
             description="Create one, then pick which notes, reviewers, and quizzes to include."
           />
         </div>
@@ -114,7 +113,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
               </div>
               <p className="font-display text-base text-ink line-clamp-1">{collection.title}</p>
               <p className="mt-1 text-xs text-ink-faint">
-                {collection._count.feedback} feedback · updated {formatRelativeTime(new Date(collection.updatedAt))}
+                {collection._count.members} private · {collection._count.feedback} feedback · updated {formatRelativeTime(new Date(collection.updatedAt))}
               </p>
             </Link>
           ))}
