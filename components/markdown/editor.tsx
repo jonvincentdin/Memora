@@ -84,14 +84,14 @@ export function MarkdownEditor({ value, onChange, minRows = 16, className }: Mar
           <button
             type="button"
             onClick={() => setMode("edit")}
-            className={cn("flex items-center gap-1 rounded px-2 py-1 text-xs font-medium", mode === "edit" ? "bg-white text-ink shadow-sm" : "text-ink-faint")}
+            className={cn("flex items-center gap-1 rounded px-2 py-1 text-xs font-medium", mode === "edit" ? "bg-surface text-ink shadow-sm" : "text-ink-faint")}
           >
             <Pencil className="h-3 w-3" /> Edit
           </button>
           <button
             type="button"
             onClick={() => setMode("preview")}
-            className={cn("flex items-center gap-1 rounded px-2 py-1 text-xs font-medium", mode === "preview" ? "bg-white text-ink shadow-sm" : "text-ink-faint")}
+            className={cn("flex items-center gap-1 rounded px-2 py-1 text-xs font-medium", mode === "preview" ? "bg-surface text-ink shadow-sm" : "text-ink-faint")}
           >
             <Eye className="h-3 w-3" /> Preview
           </button>
@@ -102,15 +102,15 @@ export function MarkdownEditor({ value, onChange, minRows = 16, className }: Mar
         <div className="border-b border-line bg-accent-soft/30 px-4 py-3 text-xs text-ink-soft">
           <p className="mb-1.5 font-medium text-ink">Markdown quick guide</p>
           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-            <p><code className="rounded bg-white px-1"># Heading</code> → big heading</p>
-            <p><code className="rounded bg-white px-1">**bold**</code> → <strong>bold</strong></p>
-            <p><code className="rounded bg-white px-1">*italic*</code> → <em>italic</em></p>
-            <p><code className="rounded bg-white px-1">- item</code> → bullet list</p>
-            <p><code className="rounded bg-white px-1">1. item</code> → numbered list</p>
-            <p><code className="rounded bg-white px-1">&gt; note</code> → callout / quote</p>
+            <p><code className="rounded bg-surface px-1"># Heading</code> → big heading</p>
+            <p><code className="rounded bg-surface px-1">**bold**</code> → <strong>bold</strong></p>
+            <p><code className="rounded bg-surface px-1">*italic*</code> → <em>italic</em></p>
+            <p><code className="rounded bg-surface px-1">- item</code> → bullet list</p>
+            <p><code className="rounded bg-surface px-1">1. item</code> → numbered list</p>
+            <p><code className="rounded bg-surface px-1">&gt; note</code> → callout / quote</p>
           </div>
           <p className="mt-2 mb-1 font-medium text-ink">Tables — put a header row, then a divider row of dashes, then data rows:</p>
-          <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px] leading-tight text-ink">
+          <pre className="overflow-x-auto rounded bg-surface p-2 font-mono text-[11px] leading-tight text-ink">
 {`| Term    | Meaning         |
 |---------|-----------------|
 | Mitosis | Cell division   |`}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, Trash2, Sparkles, ArrowLeft, FileText } from "lucide-react";
+import { Trash2, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/utils";
 import { ResourceActions } from "@/components/library/resource-actions";
 import { TagEditor } from "@/components/library/tag-editor";
 import { RevisionHistory } from "@/components/library/revision-history";
+import { ExportMenu } from "@/components/exports/export-menu";
 
 interface NoteDetailProps {
   note: {
@@ -73,9 +74,10 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
     router.replace("/notes");
   }
 
-  async function handlePdfExport() {
-    const { exportMarkdownToPdf } = await import("@/lib/pdf-export");
-    exportMarkdownToPdf(note.title, content);
+  async function handleExport(format: string) {
+    if (format === "pdf") { const { exportMarkdownToPdf } = await import("@/lib/pdf-export"); exportMarkdownToPdf(title, content); return; }
+    if (format === "docx") { const { exportMarkdownToWord } = await import("@/lib/word-export"); await exportMarkdownToWord(title, content); return; }
+    window.location.href = `/api/notes/export?id=${note.id}&format=${format}`;
   }
 
   return (
@@ -87,12 +89,7 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Badge tone="neutral">{note.sourceType}</Badge>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.open(`/api/notes/export?id=${note.id}&format=md`, "_blank")}>
-            <Download className="h-3.5 w-3.5" /> MD
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => void handlePdfExport()}>
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </Button>
+          <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "md", label: "Markdown" }, { value: "json", label: "Memoria JSON" }]} onExport={handleExport} />
           <Button variant="secondary" size="sm" onClick={() => router.push(`/reviewers?fromNote=${note.id}`)}>
             <Sparkles className="h-3.5 w-3.5" /> Build reviewer
           </Button>

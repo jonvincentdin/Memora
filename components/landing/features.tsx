@@ -29,7 +29,7 @@ const features = [
   {
     icon: Share2,
     title: "Sharing",
-    text: "Share a reviewer or quiz with another Memora user, with view or edit permissions.",
+    text: "Share a reviewer or quiz with another Memoria user, with view or edit permissions.",
   },
 ];
 

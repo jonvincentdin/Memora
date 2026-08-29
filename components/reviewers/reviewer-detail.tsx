@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Download, FileText, Pencil } from "lucide-react";
+import { ArrowLeft, Sparkles, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/utils";
 import { ResourceActions } from "@/components/library/resource-actions";
 import { TagEditor } from "@/components/library/tag-editor";
 import { RevisionHistory } from "@/components/library/revision-history";
+import { ExportMenu } from "@/components/exports/export-menu";
 
 interface ReviewerDetailProps {
   reviewer: {
@@ -67,9 +68,10 @@ export function ReviewerDetail({ reviewer, isOwner, autoSave }: ReviewerDetailPr
     }
   }
 
-  async function handlePdfExport() {
-    const { exportMarkdownToPdf } = await import("@/lib/pdf-export");
-    exportMarkdownToPdf(reviewer.title, content);
+  async function handleExport(format: string) {
+    if (format === "pdf") { const { exportMarkdownToPdf } = await import("@/lib/pdf-export"); exportMarkdownToPdf(title, content); return; }
+    if (format === "docx") { const { exportMarkdownToWord } = await import("@/lib/word-export"); await exportMarkdownToWord(title, content); return; }
+    window.location.href = `/api/reviewers/export?id=${reviewer.id}&format=${format}`;
   }
 
   return (
@@ -81,15 +83,7 @@ export function ReviewerDetail({ reviewer, isOwner, autoSave }: ReviewerDetailPr
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Badge tone="accent">{reviewer.style}</Badge>
         <div className="flex items-center gap-2">
-          <a
-            href={`/api/reviewers/export?id=${reviewer.id}&format=json`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-ink hover:bg-ink/5"
-          >
-            <Download className="h-3.5 w-3.5" /> JSON
-          </a>
-          <Button variant="outline" size="sm" onClick={() => void handlePdfExport()}>
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </Button>
+          <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "md", label: "Markdown" }, { value: "json", label: "Memoria JSON" }]} onExport={handleExport} />
           <Link
             href={`/quizzes?fromReviewer=${reviewer.id}`}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-medium text-ink hover:bg-accent-dark hover:text-white"

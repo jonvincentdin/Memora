@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { isRateLimited } from "@/lib/rate-limit";
+import { randomUUID } from "crypto";
 
 // A precomputed dummy hash so a login attempt against a nonexistent email
 // still runs bcrypt.compare — otherwise "no such user" responds measurably
@@ -79,14 +80,37 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        await prisma.activeSession.deleteMany({ where: { OR: [{ lastSeenAt: { lt: cutoff } }, { userId: user.id, id: token.sessionId ?? "" }] } });
+        const existing = await prisma.activeSession.count({ where: { userId: user.id, lastSeenAt: { gte: cutoff } } });
+        token.sessionId = randomUUID();
+        token.sessionConflict = existing > 0;
+        token.lastSessionCheck = Date.now();
+        await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id } });
+      } else if (token.sessionId && (!token.lastSessionCheck || Date.now() - token.lastSessionCheck > 30_000)) {
+        const active = await prisma.activeSession.findUnique({ where: { id: token.sessionId }, select: { id: true } });
+        token.invalidated = !active;
+        token.lastSessionCheck = Date.now();
+        if (active) await prisma.activeSession.update({ where: { id: token.sessionId }, data: { lastSeenAt: new Date() } });
       }
       return token;
     },
     async session({ session, token }) {
+      if (token.invalidated) {
+        (session as { user?: unknown }).user = undefined;
+        return session;
+      }
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.sessionId = token.sessionId;
+        session.user.sessionConflict = token.sessionConflict;
       }
       return session;
+    },
+  },
+  events: {
+    async signOut({ token }) {
+      if (token?.sessionId) await prisma.activeSession.deleteMany({ where: { id: token.sessionId } });
     },
   },
   secret: process.env.AUTH_SECRET,

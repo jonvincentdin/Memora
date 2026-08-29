@@ -29,6 +29,6 @@ export const GET = withApiErrorHandling(async () => {
     prisma.aiConnection.findMany({ where: { userId: sessionUser.id }, select: { provider: true, model: true, createdAt: true, updatedAt: true } }),
   ]);
   const safeCollections = collections.map(({ passwordHash: _passwordHash, ...collection }) => ({ ...collection, hasPassword: Boolean(_passwordHash) }));
-  const body = JSON.stringify({ format: "memora-account-export", version: 1, exportedAt: new Date().toISOString(), user, settings, notes, reviewers, quizzes, attempts, collections: safeCollections, flashcards, reviews, progress, studySessions, tags, notifications, sharesGranted, sharesGiven, pendingInvites, integrations, aiConnections });
-  return new NextResponse(body, { headers: { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="memora-account-${new Date().toISOString().slice(0, 10)}.json"` } });
+  const body = JSON.stringify({ format: "memoria-account-export", version: 1, exportedAt: new Date().toISOString(), user, settings, notes, reviewers, quizzes, attempts, collections: safeCollections, flashcards, reviews, progress, studySessions, tags, notifications, sharesGranted, sharesGiven, pendingInvites, integrations, aiConnections });
+  return new NextResponse(body, { headers: { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="memoria-account-${new Date().toISOString().slice(0, 10)}.json"` } });
 });

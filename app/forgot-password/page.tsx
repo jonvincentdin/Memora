@@ -35,5 +35,5 @@ export default function ForgotPasswordPage() {
 }
 
 function AccountCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return <main className="flex min-h-screen items-center justify-center bg-paper px-6"><div className="w-full max-w-sm"><Link href="/" className="mb-8 flex items-center justify-center gap-2 font-display text-lg text-ink"><BookMarked className="h-5 w-5 text-accent-dark" /> Memora</Link><div className="card p-7"><h1 className="font-display text-xl text-ink">{title}</h1><p className="mb-6 mt-1 text-sm text-ink-soft">{description}</p>{children}</div></div></main>;
+  return <main className="flex min-h-screen items-center justify-center bg-paper px-6"><div className="w-full max-w-sm"><Link href="/" className="mb-8 flex items-center justify-center gap-2 font-display text-lg text-ink"><BookMarked className="h-5 w-5 text-accent-dark" /> Memoria</Link><div className="card p-7"><h1 className="font-display text-xl text-ink">{title}</h1><p className="mb-6 mt-1 text-sm text-ink-soft">{description}</p>{children}</div></div></main>;
 }

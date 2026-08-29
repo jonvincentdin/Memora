@@ -51,9 +51,9 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     const verifyUrl = appUrl(`/verify-email?token=${encodeURIComponent(token)}`);
     await sendTransactionalEmail({
       to: user.email,
-      subject: "Verify your Memora email",
+      subject: "Verify your Memoria email",
       text: `Verify your email: ${verifyUrl}\n\nThis link expires in 24 hours.`,
-      html: `<p>Hello ${escapeHtml(user.name)},</p><p><a href="${verifyUrl}">Verify your Memora email</a>. This link expires in 24 hours.</p>`,
+      html: `<p>Hello ${escapeHtml(user.name)},</p><p><a href="${verifyUrl}">Verify your Memoria email</a>. This link expires in 24 hours.</p>`,
     });
   }
 

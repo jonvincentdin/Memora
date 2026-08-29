@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Plus, X, Sparkles } from "lucide-react";
+import { Copy, Check, Plus, X, Sparkles, FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
@@ -33,6 +33,7 @@ interface Note {
 export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultNoteId) || initiallyOpen);
+  const [creationPath, setCreationPath] = useState<"notes" | "import" | null>(defaultNoteId ? "notes" : null);
   const [step, setStep] = useState(1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [style, setStyle] = useState<(typeof STYLES)[number]["value"]>("COMPLETE");
@@ -133,6 +134,25 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
     router.push(`/reviewers/${data.reviewer.id}`);
   }
 
+  async function importReviewerFile(file: File) {
+    setError(null);
+    try {
+      const raw = await file.text();
+      let content = raw;
+      let recoveredTitle = file.name.replace(/\.[^/.]+$/, "");
+      if (file.name.toLowerCase().endsWith(".json")) {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (!(["memora-reviewer-export", "memoria-reviewer-export"].includes(String(parsed.format))) || typeof parsed.content !== "string") throw new Error("Choose a Memoria reviewer JSON export, or import a Markdown/text file.");
+        content = parsed.content;
+        if (typeof parsed.title === "string") recoveredTitle = parsed.title;
+      }
+      setPastedMarkdown(content);
+      setTitle(recoveredTitle);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "This file couldn't be read.");
+    }
+  }
+
   if (!open) {
     return (
       <Button onClick={() => setOpen(true)}>
@@ -150,15 +170,23 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
         </button>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
+      {!creationPath && <div>
+        <p className="mb-4 text-sm text-ink-soft">How would you like to create this reviewer?</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button onClick={() => { setCreationPath("notes"); setStep(1); }} className="rounded-xl border border-line bg-surface p-5 text-left transition-colors hover:border-accent"><FileText className="mb-3 h-6 w-6 text-accent-dark" /><span className="block font-display text-lg text-ink">From your Notes</span><span className="mt-1 block text-sm text-ink-soft">Select one or more notes and build a structured reviewer.</span></button>
+          <button onClick={() => { setCreationPath("import"); setStep(4); }} className="rounded-xl border border-line bg-surface p-5 text-left transition-colors hover:border-accent"><Upload className="mb-3 h-6 w-6 text-accent-dark" /><span className="block font-display text-lg text-ink">Import</span><span className="mt-1 block text-sm text-ink-soft">Upload a Memoria export, Markdown, or text reviewer.</span></button>
+        </div>
+      </div>}
+
+      {creationPath && <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
         {["Select notes", "Choose style", "Generate & copy", "Paste result"].map((label, i) => (
           <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-ink text-white" : "bg-ink/5")}>
             {i + 1}. {label}
           </span>
         ))}
-      </div>
+      </div>}
 
-      {step === 1 && (
+      {creationPath === "notes" && step === 1 && (
         <div>
           {notes.length === 0 ? (
             <p className="text-sm text-ink-soft">You don&apos;t have any notes yet. Import a note first.</p>
@@ -180,7 +208,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
         </div>
       )}
 
-      {step === 2 && (
+      {creationPath === "notes" && step === 2 && (
         <div>
           <Label>Reviewer style</Label>
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -214,7 +242,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
         </div>
       )}
 
-      {step === 3 && (
+      {creationPath === "notes" && step === 3 && (
         <div>
           <p className="mb-2 text-sm text-ink-soft">Copy this prompt and paste it into Claude or another AI assistant.</p>
           <Textarea readOnly rows={10} value={prompt} className="font-mono text-xs" />
@@ -233,8 +261,9 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
         </div>
       )}
 
-      {step === 4 && (
+      {creationPath && step === 4 && (
         <div>
+          {creationPath === "import" && <label className="mb-4 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line bg-surface p-5 text-sm font-medium text-ink-soft hover:border-accent"><Upload className="h-4 w-4" /> Choose .md, .txt, or Memoria .json<input type="file" accept=".md,.txt,.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importReviewerFile(file); }} /></label>}
           <Label htmlFor="mdresult">Paste the AI&apos;s Markdown response</Label>
           <Textarea
             id="mdresult"
@@ -245,7 +274,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
             placeholder="# Reviewer title&#10;&#10;## Section&#10;..."
           />
           <p className="mt-1 text-xs text-ink-faint">
-            If it&apos;s wrapped in a ```markdown code fence, that&apos;s fine — Memora strips it automatically.
+            If it&apos;s wrapped in a ```markdown code fence, that&apos;s fine — Memoria strips it automatically.
           </p>
 
           {pastedMarkdown.trim() && !isValidLength && (
@@ -277,7 +306,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
           {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
           <div className="mt-5 flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+            <Button variant="ghost" onClick={() => creationPath === "import" ? setCreationPath(null) : setStep(3)}>Back</Button>
             <Button onClick={handleSave} disabled={!isValidLength} loading={loading}>
               Save reviewer
             </Button>

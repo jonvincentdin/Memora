@@ -26,7 +26,7 @@ const TYPE_SCHEMAS: Record<string, string> = {
 /**
  * Builds the "Generate Quiz" prompt sent by the user to an external AI. The
  * AI must generate questions ONLY from the supplied source material and
- * return Memora's memora-quiz JSON schema.
+ * return Memoria's versioned quiz JSON schema.
  */
 export function buildQuizGenerationPrompt(sources: SourceForPrompt[], options: QuizPromptOptions): string {
   const sourceBlock = sources
@@ -62,7 +62,7 @@ OUTPUT FORMAT
 Return ONLY valid JSON (no prose, no markdown code fences) matching this schema:
 
 {
-  "format": "memora-quiz",
+  "format": "memoria-quiz",
   "version": "1.0",
   "title": "string",
   "settings": { "mode": "${options.mode ? options.mode.toLowerCase() : "quiz"}", "difficulty": "${options.difficulty.toLowerCase()}", "questionCount": ${options.questionCount} },

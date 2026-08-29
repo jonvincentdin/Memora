@@ -24,12 +24,12 @@
   --color-paper: 18 20 31;
   --color-ink: 236 237 245;
   --color-ink-soft: 183 186 209;
-  --color-ink-faint: 124 127 153;
+  --color-ink-faint: 148 151 176;
   --color-accent: 232 163 61;
   --color-accent-soft: 58 44 20;
   --color-accent-dark: 240 180 99;
-  --color-line: 42 46 66;
-  --color-surface: 26 29 43;
+  --color-line: 49 54 77;
+  --color-surface: 27 31 46;
   --color-success: 76 175 131;
   --color-danger: 226 104 95;
 }
@@ -42,6 +42,8 @@
   body {
     @apply bg-paper text-ink antialiased;
   }
+
+  .dark body { color-scheme: dark; }
 
   :focus-visible {
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper rounded-sm;

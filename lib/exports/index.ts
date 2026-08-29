@@ -5,7 +5,7 @@ import type { Reviewer } from "@/lib/reviewers-repo";
 /** Versioned JSON export of a note, re-importable into Memora. Takes the already-decompressed Note shape from lib/notes-repo. */
 export function exportNoteAsJson(note: Pick<Note, "title" | "description" | "content">) {
   return {
-    format: "memora-note-export",
+    format: "memoria-note-export",
     version: "1",
     title: note.title,
     description: note.description ?? undefined,
@@ -16,7 +16,7 @@ export function exportNoteAsJson(note: Pick<Note, "title" | "description" | "con
 /** Versioned JSON export of a reviewer, re-importable into Memora. Takes the already-decompressed Reviewer shape from lib/reviewers-repo. */
 export function exportReviewerAsJson(reviewer: Pick<Reviewer, "title" | "description" | "content" | "style">) {
   return {
-    format: "memora-reviewer-export",
+    format: "memoria-reviewer-export",
     version: "1",
     title: reviewer.title,
     description: reviewer.description ?? undefined,
@@ -25,11 +25,13 @@ export function exportReviewerAsJson(reviewer: Pick<Reviewer, "title" | "descrip
   };
 }
 
-export function exportQuizAsJson(quiz: Pick<Quiz, "title" | "configuration" | "questions">) {
+export function exportQuizAsJson(quiz: Pick<Quiz, "title" | "description" | "mode" | "configuration" | "questions">) {
   return {
-    format: "memora-quiz-v1",
+    format: "memoria-quiz-v1",
     version: "1",
     title: quiz.title,
+    description: quiz.description ?? undefined,
+    mode: quiz.mode,
     settings: quiz.configuration,
     questions: quiz.questions,
   };

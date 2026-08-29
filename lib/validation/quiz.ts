@@ -77,7 +77,7 @@ export const quizSettingsSchema = z.object({
 });
 
 export const structuredQuizSchema = z.object({
-  format: z.literal("memora-quiz"),
+  format: z.enum(["memoria-quiz", "memora-quiz"]),
   version: looseVersionSchema,
   title: z.string().min(1),
   settings: quizSettingsSchema,

@@ -24,9 +24,9 @@ interface NoteForPrompt {
 }
 
 /**
- * Builds the "Prepare Notes for Memora" prompt. The user pastes this
+ * Builds the "Prepare Notes for Memoria" prompt. The user pastes this
  * (or the downloaded source package) into Claude or another AI assistant;
- * Memora never calls an AI API itself.
+ * Memoria can use a connected per-user AI key or a manual copy/paste workflow.
  *
  * Output is plain Markdown (GitHub-flavored — tables, headings, bold, lists),
  * not JSON. Markdown is dramatically more reliable for a model to produce
@@ -52,7 +52,7 @@ RULES
 - Do not remove information that is clearly important, even if it seems minor.
 - If something in the source is unclear, illegible, or ambiguous, mark it as [UNCLEAR: ...] instead of guessing or inventing a replacement.
 - Organize the content into logical topics using headings and subheadings.
-- Make flashcard material machine-readable: write key definitions as "**Term**: definition" or place them in a two-column Term | Definition table. This lets Memora create flashcards automatically.
+- Make flashcard material machine-readable: write key definitions as "**Term**: definition" or place them in a two-column Term | Definition table. This lets Memoria create flashcards automatically.
 
 FORMATTING GUIDE — use standard GitHub-flavored Markdown:
 - "# Title" for the reviewer's main title (use exactly one).
@@ -84,7 +84,7 @@ export function buildSourcePackage(
   notes: (NoteForPrompt & { id: string; sourceType: string; updatedAt: Date })[],
   style: ProcessingStyle
 ): string {
-  const header = `MEMORA SOURCE PACKAGE\nGenerated ${new Date().toISOString()}\n${notes.length} note(s) included\n`;
+  const header = `MEMORIA SOURCE PACKAGE\nGenerated ${new Date().toISOString()}\n${notes.length} note(s) included\n`;
 
   const body = notes
     .map((note, i) => {
@@ -103,7 +103,7 @@ export function buildSourcePackage(
 
   const instructions = [
     "==============================",
-    "MEMORA AI INSTRUCTIONS",
+    "MEMORIA AI INSTRUCTIONS",
     "==============================",
     `Convert the study material above into a clean Markdown reviewer.`,
     `Processing style: ${PROCESSING_STYLE_LABELS[style]}`,

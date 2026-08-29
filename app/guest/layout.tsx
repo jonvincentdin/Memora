@@ -9,7 +9,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 font-display text-lg text-ink">
             <BookMarked className="h-5 w-5 text-accent-dark" />
-            Memora
+            Memoria
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />

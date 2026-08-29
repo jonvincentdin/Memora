@@ -8,7 +8,7 @@ export function LandingNav() {
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 font-display text-lg font-medium text-ink">
           <BookMarked className="h-5 w-5 text-accent-dark" strokeWidth={2.25} />
-          Memora
+          Memoria
         </Link>
         <div className="flex items-center gap-6">
           <Link href="#workflow" className="hidden text-sm text-ink-soft hover:text-ink sm:block">

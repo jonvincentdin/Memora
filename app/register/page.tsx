@@ -71,7 +71,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2 font-display text-lg text-ink">
           <BookMarked className="h-5 w-5 text-accent-dark" />
-          Memora
+          Memoria
         </Link>
         <div className="card p-7">
           <h1 className="font-display text-xl text-ink">Create your account</h1>

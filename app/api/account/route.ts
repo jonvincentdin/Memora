@@ -52,9 +52,9 @@ export const PATCH = withApiErrorHandling(async (request: Request) => {
     const verifyUrl = appUrl(`/verify-email?token=${encodeURIComponent(token)}`);
     await sendTransactionalEmail({
       to: updated.email,
-      subject: "Verify your new Memora email",
+      subject: "Verify your new Memoria email",
       text: `Verify your email: ${verifyUrl}`,
-      html: `<p><a href="${verifyUrl}">Verify your new Memora email</a>. This link expires in 24 hours.</p>`,
+      html: `<p><a href="${verifyUrl}">Verify your new Memoria email</a>. This link expires in 24 hours.</p>`,
     });
   }
   return NextResponse.json({ user: updated, requiresVerification });

@@ -1,8 +1,8 @@
-# Memora
+# Memoria
 
 A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 15, TypeScript, Prisma, and NextAuth.
 
-Memora can generate ready-to-use prompts for a manual copy/paste workflow, or users can connect their own OpenAI, Anthropic, or Gemini API key for one-click generation. Provider keys are encrypted at rest and AI output is validated before it is saved.
+Memoria can generate ready-to-use prompts for a manual copy/paste workflow, or users can connect their own OpenAI, Anthropic, or Gemini API key for one-click generation. Provider keys are encrypted at rest and AI output is validated before it is saved.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Memora can generate ready-to-use prompts for a manual copy/paste workflow, or us
 - **Auth:** NextAuth.js credentials plus per-user Google Drive and Notion OAuth connections
 - **Content:** Notes and reviewers are Markdown, **gzip-compressed at rest** (see Storage below), rendered with `react-markdown` + `remark-gfm`
 - **Validation:** Zod schemas shared between client and server (`lib/validation/`)
-- **PDF export:** client-side, print-first rendering through `jsPDF` — no server round trip, works for guest mode too
+- **Document export:** print-first PDF through `jsPDF` plus Word `.docx` through `docx`, using the same A4 layout rules and Memoria branding
 
 ## Getting started
 
@@ -44,7 +44,7 @@ Set `DATABASE_URL` to the provider's pooled PostgreSQL connection string in Verc
 ```
 app/
   (app)/            # authenticated routes, wrapped by a shared sidebar/topbar layout
-    dashboard/  notes/  reviewers/  quizzes/  study/  shared/  settings/
+    dashboard/  notes/  reviewers/  quizzes/  study/  archive/  shared/  settings/
   guest/            # unauthenticated "quick mode" — no login, nothing saved
   api/               # route handlers — every one re-checks auth + ownership/sharing
     guest/           # public, stateless endpoints (prompt generation, file extraction)
@@ -66,7 +66,7 @@ lib/
   exports/           JSON export builders
   markdown-frontmatter.ts   lossless title/description round-trip for exported .md files
   prompts/           builds the "prepare notes" and "generate quiz" AI prompts
-  pdf-export.ts      client-side Markdown and print-first quiz/exam PDF rendering
+  pdf-export.ts / word-export.ts   matching print-first PDF and Word document rendering
   quiz-grading.ts     shared grading logic (used by both saved attempts and guest mode)
   rate-limit.ts / guest-rate-limit.ts   durable database-backed throttling (see Security below)
 prisma/schema.prisma
@@ -80,19 +80,19 @@ This is deliberately **not** implicit ORM magic: `lib/notes-repo.ts` and `lib/re
 
 ## How the AI-assisted workflow works
 
-1. **Import** — upload a `.md`/`.txt`/`.pdf` file (or a Memora `.json` export, see Round-trip below), paste content, or connect your own Google Drive/Notion workspace and choose a document.
-2. **Generate a prompt** — select notes, pick a processing style, and Memora builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memora renders it with full typography.
+1. **Import** — upload a `.md`/`.txt`/`.pdf`/`.docx` file (or a Memoria `.json` export, see Round-trip below), paste content, or connect your own Google Drive/Notion workspace and choose a document. Image-heavy files pause for an explicit OCR/partial-import decision.
+2. **Generate a prompt** — select notes, pick a processing style, and Memoria builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memoria renders it with full typography.
 3. **Generate or copy** — use an encrypted, user-owned OpenAI/Anthropic/Gemini key for direct generation, or copy the prompt into any AI assistant yourself.
-4. **Import the result** — paste the response back into Memora. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
+4. **Import the result** — paste the response back into Memoria. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
 5. **Study** — turn the result into flashcards, quizzes, and exams, and track attempts over time.
 
 ## Round-trip fidelity (export → re-import)
 
-Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so re-importing recovers the exact original title/description instead of guessing from the filename. Exported `.json` files (`memora-note-export` / `memora-reviewer-export`) can be re-imported directly through the same "Upload File" flow — anything else named `.json` is rejected with a clear message rather than silently imported. JSON exports are compact (no pretty-print whitespace) to keep file size down.
+Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so re-importing recovers the exact original title/description instead of guessing from the filename. Versioned Memoria `.json` exports restore notes, reviewers, and quizzes through the same Upload File flow. Legacy `memora-*` files remain accepted for backward compatibility; newly downloaded files use `memoria-*` identifiers.
 
-## PDF export
+## PDF and Word export
 
-Quiz and exam PDFs use an explicit white-page, dark-text template that is independent of the app theme. Every document contains a Memora/title/metadata header, numbered questions and response options, followed by an answer key with the correct answer and detailed explanation for every question. Drawing text directly with `jsPDF` avoids browser CSS and canvas visibility bugs that can produce blank exports. Reviewer/Markdown exports use a lightweight structural renderer for headings, paragraphs, lists, callouts, and tables.
+Exports use an explicit white-page, dark-text template independent of the app theme. Every quiz/exam document contains a Memoria/title/metadata header, numbered questions and response options, then an answer key with the correct answer and explanation for every question. PDF content is drawn directly with `jsPDF`, preventing the browser CSS/canvas bug that produced correctly paginated but blank files. Word exports share the A4 margins, hierarchy, section order, typography, page breaks, and “Made with Memoria” footer.
 
 ## Guest / quick mode (`/guest`)
 
@@ -118,12 +118,19 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 - Guest endpoints (`/api/guest/*`) also have hard content-size caps because they are unauthenticated.
 - Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) are set globally in `next.config.mjs`.
 - Markdown is rendered via `react-markdown` **without** the `rehype-raw` plugin, so raw HTML in note/reviewer content (whether typed by a user or returned by an AI) is displayed as literal text rather than executed — this is what keeps rendering safe without a separate sanitization pass.
-- File uploads are capped by size, restricted to `.md`/`.txt`/`.pdf`/Memora's own `.json` exports by extension, and PDFs are additionally verified by magic-byte sniffing rather than trusting the extension alone.
+- File uploads are capped by size, restricted to `.md`/`.txt`/`.pdf`/`.docx`/Memoria's own `.json` exports by extension, and PDFs/DOCX files are additionally verified by magic-byte sniffing rather than trusting the extension alone.
 - Google/Notion OAuth state is short-lived and HMAC-signed; provider tokens are AES-256-GCM encrypted at rest and looked up by user + provider so credentials cannot be shared across accounts.
 
-## What's implemented vs. what's marked TODO
+## Shipped feature status
 
-**Implemented:** auth, notes CRUD + local and connected-app imports, JSON/MD/PDF export, a full Markdown editor, reviewer and quiz generation, 7 question types, Review and Exam test modes, timers and auto-grading, results screens, flashcards, full guest mode, sharing, per-user Google/Notion connections, settings, global search, and compressed at-rest storage.
+**Implemented:** auth and session-conflict handling; skippable onboarding; notes CRUD; validated local and per-user connected-app imports; OCR warnings for image-heavy sources; lossless Memoria round trips; a unified Archive; full-copy duplication with tags/source links/collection placement; Markdown editing; exactly two reviewer creation paths; reviewer/quiz generation; 7 question types; Review and Exam modes; Pomodoro/timers and auto-grading; results and spaced-repetition flashcards; guest mode; direct sharing; public/private Collections; collection feedback threads and moderation hooks; notifications with unread indicator and contextual click-through; PDF/Word/JSON/Markdown/text exports; global search; dark/light/system themes; and compressed at-rest content.
+
+### Optional connection setup
+
+- Google Drive: set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then add the callback shown by the app to the Google OAuth client. Each person authorizes their own read-only Drive connection.
+- Notion: set `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET`, configure the app callback, and let each person select their own workspace during OAuth.
+- AI generation: users add their own OpenAI, Anthropic, or Gemini key during onboarding or under Settings. `INTEGRATION_ENCRYPTION_KEY` must be set so OAuth tokens and AI keys are encrypted at rest.
+- All connections are optional and can be revoked or relinked from Settings.
 
 The study system persists editable flashcards, schedules reviews with spaced repetition, records study sessions, presents a due-card queue, and exports cards as Anki-compatible CSV. Mastery tests use prior graded attempts to prioritize questions the learner has missed most often.
 

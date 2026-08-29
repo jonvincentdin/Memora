@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookMarked, FileText, ScrollText, HelpCircle, Layers, MessageSquare, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { BookMarked, FileText, ScrollText, HelpCircle, Layers, MessageSquare, ChevronLeft, ChevronRight, RefreshCw, ArrowLeft } from "lucide-react";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { QuestionInput } from "@/components/quizzes/question-input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { extractFlashcardsFromMarkdown } from "@/lib/flashcards";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 import type { PublicCollection } from "@/lib/share-collections-repo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 type SectionKey = "notes" | "reviewers" | "quizzes" | "flashcards";
 
@@ -36,8 +38,11 @@ export function PublicCollectionView({ collection }: { collection: PublicCollect
     <div className="min-h-screen bg-paper">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto max-w-4xl px-6 py-5">
-          <div className="flex items-center gap-2 text-sm text-ink-faint">
-            <BookMarked className="h-4 w-4 text-accent-dark" /> Memora collection
+          <div className="flex items-center justify-between gap-4">
+            <Link href={collection.viewerUserId ? "/shared" : "/"} className="inline-flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink">
+              <ArrowLeft className="h-4 w-4" /><BookMarked className="h-4 w-4 text-accent-dark" /> Back to Memoria
+            </Link>
+            <ThemeToggle />
           </div>
           <h1 className="mt-1 font-display text-2xl text-ink">{collection.title}</h1>
           {collection.description && <p className="mt-1 text-sm text-ink-soft">{collection.description}</p>}
@@ -118,7 +123,7 @@ export function PublicCollectionView({ collection }: { collection: PublicCollect
           </>
         )}
 
-        <FeedbackSection slug={collection.slug} feedback={feedback} onSubmitted={(f) => setFeedback((prev) => [f, ...prev])} />
+        <FeedbackSection slug={collection.slug} viewerUserId={collection.viewerUserId} feedback={feedback} onSubmitted={(f) => setFeedback((prev) => [...prev, f])} onChanged={setFeedback} />
       </div>
     </div>
   );
@@ -244,18 +249,24 @@ function PublicFlashcardDeck({ cards }: { cards: { front: string; back: string }
 
 function FeedbackSection({
   slug,
+  viewerUserId,
   feedback,
   onSubmitted,
+  onChanged,
 }: {
   slug: string;
+  viewerUserId: string | null;
   feedback: PublicCollection["feedback"];
   onSubmitted: (f: PublicCollection["feedback"][number]) => void;
+  onChanged: React.Dispatch<React.SetStateAction<PublicCollection["feedback"]>>;
 }) {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function submit() {
     if (!message.trim()) return;
@@ -265,7 +276,7 @@ function FeedbackSection({
       const res = await fetch(`/api/collections/public/${slug}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ authorName: name.trim() || undefined, message: message.trim() }),
+        body: JSON.stringify({ authorName: name.trim() || undefined, message: message.trim(), parentId: replyTo ?? undefined }),
       });
       const data = await res.json().catch(() => null);
       if (!data) {
@@ -273,8 +284,9 @@ function FeedbackSection({
       } else if (!res.ok) {
         setError(data.error ?? "Couldn't send feedback.");
       } else {
-        onSubmitted({ id: data.feedback.id, authorName: name.trim() || null, message: message.trim(), createdAt: new Date() });
+        onSubmitted({ id: data.feedback.id, authorName: data.feedback.authorName ?? (name.trim() || null), authorUserId: data.feedback.authorUserId ?? viewerUserId, message: message.trim(), createdAt: new Date(), updatedAt: new Date(), parentId: replyTo });
         setMessage("");
+        setReplyTo(null);
         setSent(true);
         setTimeout(() => setSent(false), 2000);
       }
@@ -284,18 +296,38 @@ function FeedbackSection({
     setSending(false);
   }
 
+  async function editComment(id: string, current: string) {
+    const next = window.prompt("Edit your comment", current)?.trim();
+    if (!next || next === current) return;
+    setEditingId(id);
+    const response = await fetch(`/api/feedback/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: next }) });
+    if (response.ok) onChanged((rows) => rows.map((row) => row.id === id ? { ...row, message: next, updatedAt: new Date() } : row));
+    setEditingId(null);
+  }
+
+  async function deleteComment(id: string) {
+    if (!window.confirm("Delete this comment and its replies?")) return;
+    const response = await fetch(`/api/feedback/${id}`, { method: "DELETE" });
+    if (response.ok) onChanged((rows) => rows.filter((row) => row.id !== id && row.parentId !== id));
+  }
+
+  async function reportComment(id: string) {
+    const reason = window.prompt("Why are you reporting this comment? (optional)") ?? undefined;
+    const response = await fetch(`/api/feedback/${id}/report`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) });
+    if (response.ok) window.alert("Report submitted. Thank you.");
+  }
+
   return (
     <div className="mt-12 border-t border-line pt-8">
       <h2 className="flex items-center gap-1.5 font-display text-lg text-ink">
         <MessageSquare className="h-4 w-4" /> Feedback
       </h2>
-      <p className="mt-1 text-sm text-ink-soft">Leave a note for whoever shared this — they&apos;ll see it, but you can&apos;t edit anything here.</p>
+      <p className="mt-1 text-sm text-ink-soft">Start a discussion or reply to another person&apos;s feedback.</p>
 
       <div className="card mt-4 p-5">
-        <Label htmlFor="feedback-name">Name (optional)</Label>
-        <Input id="feedback-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Anonymous" className="mt-1.5" />
+        {!viewerUserId && <><Label htmlFor="feedback-name">Name (optional)</Label><Input id="feedback-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Anonymous" className="mt-1.5" /></>}
         <div className="mt-3">
-          <Label htmlFor="feedback-message">Your feedback</Label>
+          <div className="flex items-center justify-between"><Label htmlFor="feedback-message">{replyTo ? "Your reply" : "Your feedback"}</Label>{replyTo && <button onClick={() => setReplyTo(null)} className="text-xs text-ink-faint hover:text-ink">Cancel reply</button>}</div>
           <Textarea id="feedback-message" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Thoughts, corrections, questions…" className="mt-1.5" />
         </div>
         {error && <p className="mt-2 text-sm text-danger">{error}</p>}
@@ -310,18 +342,19 @@ function FeedbackSection({
       {feedback.length > 0 && (
         <div className="mt-5 space-y-2">
           {feedback.map((f) => (
-            <div key={f.id} className="rounded-lg border border-line bg-surface p-3.5">
+            <div id={`feedback-${f.id}`} key={f.id} className={cn("rounded-lg border border-line bg-surface p-3.5", f.parentId && "ml-6 border-l-2 border-l-accent")}>
               <p className="text-sm text-ink">{f.message}</p>
               <p className="mt-1 text-xs text-ink-faint">
-                {f.authorName || "Anonymous"} · {formatRelativeTime(f.createdAt)}
+                {f.authorName || "Anonymous"} · {formatRelativeTime(f.createdAt)}{f.updatedAt.getTime() - f.createdAt.getTime() > 1000 ? " · edited" : ""}
               </p>
+              <div className="mt-2 flex gap-3 text-xs font-medium"><button onClick={() => { setReplyTo(f.id); document.getElementById("feedback-message")?.focus(); }} className="text-accent-dark hover:underline">Reply</button>{viewerUserId === f.authorUserId ? <><button disabled={editingId === f.id} onClick={() => editComment(f.id, f.message)} className="text-ink-soft hover:underline">Edit</button><button onClick={() => deleteComment(f.id)} className="text-danger hover:underline">Delete</button></> : viewerUserId && <button onClick={() => reportComment(f.id)} className="text-ink-faint hover:text-danger">Report</button>}</div>
             </div>
           ))}
         </div>
       )}
 
       <p className="mt-8 text-center text-xs text-ink-faint">
-        Made with <Badge tone="accent">Memora</Badge>
+        Made with <Badge tone="accent">Memoria</Badge>
       </p>
     </div>
   );

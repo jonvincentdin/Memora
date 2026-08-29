@@ -86,7 +86,7 @@ export async function shareResource(params: {
 
   const grantee = await prisma.user.findUnique({ where: { email: params.granteeEmail.toLowerCase().trim() } });
   if (!grantee) {
-    throw new Error("No Memora user found with that email.");
+    throw new Error("No Memoria user found with that email.");
   }
   if (grantee.id === params.ownerId) {
     throw new Error("You already own this resource.");

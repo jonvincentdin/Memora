@@ -19,9 +19,9 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     const resetUrl = appUrl(`/reset-password?token=${encodeURIComponent(token)}`);
     await sendTransactionalEmail({
       to: user.email,
-      subject: "Reset your Memora password",
+      subject: "Reset your Memoria password",
       text: `Reset your password: ${resetUrl}\n\nThis link expires in 30 minutes.`,
-      html: `<p>Hello ${escapeHtml(user.name)},</p><p><a href="${resetUrl}">Reset your Memora password</a>. This link expires in 30 minutes.</p>`,
+      html: `<p>Hello ${escapeHtml(user.name)},</p><p><a href="${resetUrl}">Reset your Memoria password</a>. This link expires in 30 minutes.</p>`,
     });
   }
   return NextResponse.json({ success: true });

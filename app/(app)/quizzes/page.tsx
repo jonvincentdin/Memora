@@ -8,14 +8,13 @@ import { QuizWizardLauncher } from "@/components/quizzes/quiz-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
 
-export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string; view?: string; page?: string }> }) {
+export default async function QuizzesPage(props: { searchParams: Promise<{ fromReviewer?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
-  const archived = searchParams.view === "archived";
   const page = Math.max(1, Number(searchParams.page) || 1);
   const [quizzes, notes, reviewers, settings] = await Promise.all([
     prisma.quiz.findMany({
-      where: { ownerId: user.id, archivedAt: archived ? { not: null } : null },
+      where: { ownerId: user.id, archivedAt: null },
       orderBy: { updatedAt: "desc" },
       skip: (page - 1) * 24,
       take: 24,
@@ -35,7 +34,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ fromR
         </div>
         <QuizWizardLauncher notes={notes} reviewers={reviewers} defaultReviewerId={searchParams.fromReviewer} defaults={{ questionCount: settings.defaultQuestionCount, difficulty: settings.defaultDifficulty, mode: settings.defaultQuizMode }} />
       </div>
-      <LibraryNavigation basePath="/quizzes" archived={archived} page={page} hasNext={quizzes.length === 24} />
+      <LibraryNavigation basePath="/quizzes" page={page} hasNext={quizzes.length === 24} />
 
       {quizzes.length === 0 ? (
         <EmptyState

@@ -1,8 +1,8 @@
 const steps = [
-  { label: "Import", text: "Upload your PDF or TXT notes into Memora." },
-  { label: "Generate a prompt", text: "Memora writes a ready-to-use prompt from your notes." },
+  { label: "Import", text: "Upload your PDF or TXT notes into Memoria." },
+  { label: "Generate a prompt", text: "Memoria writes a ready-to-use prompt from your notes." },
   { label: "Paste into Claude", text: "Take the prompt to Claude or another AI assistant you already use." },
-  { label: "Import the result", text: "Bring the structured file back into Memora and review it before saving." },
+  { label: "Import the result", text: "Bring the structured file back into Memoria and review it before saving." },
   { label: "Study", text: "Turn it into quizzes, exams, and flashcards, and track your progress." },
 ];
 
@@ -13,7 +13,7 @@ export function Workflow() {
         <div className="max-w-xl">
           <h2 className="font-display text-3xl text-ink sm:text-4xl">How the AI-assisted workflow works</h2>
           <p className="mt-3 text-ink-soft">
-            Memora never calls an AI API itself. It generates the prompt — you decide which AI assistant
+            Memoria never calls an AI API itself. It generates the prompt — you decide which AI assistant
             processes it, and you review everything before it&apos;s saved.
           </p>
         </div>

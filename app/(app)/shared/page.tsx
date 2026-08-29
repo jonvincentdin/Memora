@@ -10,11 +10,10 @@ const resourceRoutes: Record<string, string> = { NOTE: "/notes", REVIEWER: "/rev
 
 export default async function SharedWithMePage() {
   const user = await requireUser();
-  const shares = await prisma.resourceShare.findMany({
-    where: { userId: user.id },
-    include: { owner: { select: { name: true, email: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const [shares, collectionMemberships] = await Promise.all([
+    prisma.resourceShare.findMany({ where: { userId: user.id }, include: { owner: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" } }),
+    prisma.shareCollectionMember.findMany({ where: { userId: user.id }, include: { collection: { include: { owner: { select: { name: true, email: true } }, _count: { select: { items: true } } } } }, orderBy: { createdAt: "desc" } }),
+  ]);
 
   // Resolve each share's resource title in one batch per type.
   const noteIds = shares.filter((s) => s.resourceType === "NOTE").map((s) => s.resourceId);
@@ -32,16 +31,16 @@ export default async function SharedWithMePage() {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="font-display text-2xl text-ink">Shared with me</h1>
-      <p className="mt-1 text-sm text-ink-soft">Notes, reviewers, and quizzes other Memora users have shared with you.</p>
+      <p className="mt-1 text-sm text-ink-soft">Resources and private collections other Memoria users have shared with you.</p>
 
       <div className="mt-4 flex gap-1 rounded-lg border border-line bg-surface p-1 w-fit">
         <span className="rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-white">Shared with me</span>
         <Link href="/shared/collections" className="rounded-md px-4 py-1.5 text-sm font-medium text-ink-soft hover:bg-ink/5">
-          My public collections
+          My collections
         </Link>
       </div>
 
-      {shares.length === 0 ? (
+      {shares.length === 0 && collectionMemberships.length === 0 ? (
         <div className="mt-6">
           <EmptyState
             icon={Share2}
@@ -51,6 +50,7 @@ export default async function SharedWithMePage() {
         </div>
       ) : (
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {collectionMemberships.map(({ collection, id, createdAt }) => <Link key={id} href={`/c/${collection.slug}`} className="card p-4 hover:shadow-card-hover"><div className="mb-2 flex items-center justify-between"><Badge tone="accent">COLLECTION</Badge><span className="text-xs text-ink-faint">{collection._count.items} items</span></div><p className="font-display text-base text-ink line-clamp-1">{collection.title}</p><p className="mt-1 text-xs text-ink-faint">Shared by {collection.owner.name || collection.owner.email} · {formatRelativeTime(createdAt)}</p></Link>)}
           {shares.map((share) => {
             const title = titleMap.get(share.resourceId) ?? "(deleted resource)";
             const href = `${resourceRoutes[share.resourceType]}/${share.resourceId}`;

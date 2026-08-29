@@ -152,7 +152,7 @@ export function buildMarkdownPdf(title: string, markdown: string): jsPDF {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
-    doc.text(`Memora  |  ${title}`, PAGE_MARGIN, pageHeight - 20);
+    doc.text(`Made with Memoria  |  ${title}`, PAGE_MARGIN, pageHeight - 20);
     doc.text(`Page ${page} of ${totalPages}`, pageWidth - PAGE_MARGIN, pageHeight - 20, { align: "right" });
   }
 
@@ -231,14 +231,14 @@ export function exportQuizToPdf(title: string, questions: QuizQuestion[], metada
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("MEMORA  |  STUDY & ASSESSMENT", PAGE_MARGIN, 22);
+  doc.text("MEMORIA  |  STUDY & ASSESSMENT", PAGE_MARGIN, 22);
   y = 62;
   writeWrapped(title, { size: 22, style: "bold", gapAfter: 8 });
 
   const exportDate = (metadata.date ?? new Date()).toLocaleDateString();
   const mode = metadata.mode ? metadata.mode.replace(/_/g, " ") : "Quiz / Exam";
   writeWrapped(`Date: ${exportDate}    |    Questions: ${questions.length}    |    Type: ${mode}`, { size: 9, gapAfter: 3 });
-  writeWrapped(`Author: ${metadata.author?.trim() || "Memora user"}`, { size: 9, gapAfter: 10 });
+  writeWrapped(`Author: ${metadata.author?.trim() || "Memoria user"}`, { size: 9, gapAfter: 10 });
   doc.setDrawColor(190, 190, 190);
   doc.line(PAGE_MARGIN, y, pageWidth - PAGE_MARGIN, y);
   y += 22;
@@ -278,7 +278,7 @@ export function exportQuizToPdf(title: string, questions: QuizQuestion[], metada
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
-    doc.text(`Memora  |  ${title}`, PAGE_MARGIN, pageHeight - 20);
+    doc.text(`Made with Memoria  |  ${title}`, PAGE_MARGIN, pageHeight - 20);
     doc.text(`Page ${page} of ${totalPages}`, pageWidth - PAGE_MARGIN, pageHeight - 20, { align: "right" });
   }
 
@@ -286,5 +286,5 @@ export function exportQuizToPdf(title: string, questions: QuizQuestion[], metada
 }
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "memora-export";
+  return name.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "memoria-export";
 }
