@@ -1,6 +1,10 @@
 import "next-auth";
 
 declare module "next-auth" {
+  interface User {
+    onboardingCompletedAt?: Date | null;
+  }
+
   interface Session {
     user: {
       id: string;

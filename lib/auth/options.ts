@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
           isRateLimited(`login:${normalizedEmail}`),
           prisma.user.findUnique({
             where: { email: normalizedEmail },
-            select: { id: true, name: true, email: true, image: true, passwordHash: true, emailVerified: true },
+            select: { id: true, name: true, email: true, image: true, passwordHash: true, emailVerified: true, onboardingCompletedAt: true },
           }),
         ]);
         if (limited) {
@@ -67,6 +67,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           image: user.image ?? undefined,
+          onboardingCompletedAt: user.onboardingCompletedAt,
         };
       },
     }),
@@ -84,7 +85,10 @@ export const authOptions: NextAuthOptions = {
         await prisma.activeSession.deleteMany({ where: { OR: [{ lastSeenAt: { lt: cutoff } }, { userId: user.id, id: token.sessionId ?? "" }] } });
         const existing = await prisma.activeSession.count({ where: { userId: user.id, lastSeenAt: { gte: cutoff } } });
         token.sessionId = randomUUID();
-        token.sessionConflict = existing > 0;
+        // A newly registered account can trigger more than one auth callback
+        // while it moves through onboarding. Never treat that first session as
+        // a conflict; conflict handling starts with subsequent logins.
+        token.sessionConflict = Boolean(user.onboardingCompletedAt) && existing > 0;
         token.lastSessionCheck = Date.now();
         await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id } });
       } else if (token.sessionId && (!token.lastSessionCheck || Date.now() - token.lastSessionCheck > 30_000)) {
