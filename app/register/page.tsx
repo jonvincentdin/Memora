@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { BookMarked } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { registerSchema } from "@/lib/validation/auth";
 
 export default function RegisterPage() {
@@ -77,16 +78,18 @@ export default function RegisterPage() {
           <h1 className="font-display text-xl text-ink">Create your account</h1>
           <p className="mt-1 text-sm text-ink-soft">Start turning your notes into structured study material.</p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} autoComplete="on" className="mt-6 space-y-4">
             <div>
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              <Input id="name" name="name" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
@@ -94,9 +97,10 @@ export default function RegisterPage() {
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
+                name="password"
+                autoComplete="new-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 minLength={8}
