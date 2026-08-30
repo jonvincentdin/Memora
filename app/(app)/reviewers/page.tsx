@@ -22,7 +22,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-ink">Reviewers</h1>
-          <p className="mt-1 text-sm text-ink-soft">Structured study material built from your notes.</p>
+          <p className="mt-1 text-sm text-ink-soft">Structured study material built from your memories.</p>
         </div>
         <ReviewerWizardLauncher notes={notes} defaultNoteId={searchParams.fromNote} />
       </div>
@@ -31,9 +31,9 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
       {reviewers.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="Turn your notes into your first reviewer."
-          description="Select notes above and generate a structured reviewer."
-          actionLabel="Import a note first"
+          title="Turn your memories into your first reviewer."
+          description="Select memories above and generate a structured reviewer."
+          actionLabel="Import a memory first"
           actionHref="/notes/import"
         />
       ) : (

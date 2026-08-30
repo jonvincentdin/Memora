@@ -35,7 +35,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const data = { title: typeof snapshot.title === "string" ? snapshot.title : undefined, description: typeof snapshot.description === "string" ? snapshot.description : undefined, content: typeof snapshot.content === "string" ? snapshot.content : undefined };
   if (revision.resourceType === "NOTE") {
     const current = await findNoteById(revision.resourceId);
-    if (!current) return NextResponse.json({ error: "Note not found." }, { status: 404 });
+    if (!current) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
     await createResourceRevision({ ownerId: user.id, resourceType: "NOTE", resourceId: current.id, snapshot: { title: current.title, description: current.description ?? null, content: current.content } });
     await updateNote(revision.resourceId, data);
   } else if (revision.resourceType === "REVIEWER") {

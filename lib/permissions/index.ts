@@ -109,7 +109,8 @@ export async function shareResource(params: {
       permission: params.permission,
     },
   });
-  await prisma.notification.create({ data: { userId: grantee.id, type: "RESOURCE_SHARED", title: `A ${params.resourceType.toLowerCase()} was shared with you`, message: `You received ${params.permission.toLowerCase()} access.`, href: `/${params.resourceType.toLowerCase()}s/${params.resourceId}` } });
+  const resourceLabel = params.resourceType === "NOTE" ? "memory" : params.resourceType.toLowerCase();
+  await prisma.notification.create({ data: { userId: grantee.id, type: "RESOURCE_SHARED", title: `A ${resourceLabel} was shared with you`, message: `You received ${params.permission.toLowerCase()} access.`, href: `/${params.resourceType.toLowerCase()}s/${params.resourceId}` } });
   return share;
 }
 

@@ -22,9 +22,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Memoria — Turn your notes into knowledge",
+  title: "Memoria — Turn your memories into knowledge",
   description:
-    "Import your notes, organize them into reviewers, and test yourself with customizable quizzes and exams.",
+    "Import your memories, organize them into reviewers, and test yourself with customizable quizzes and exams.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -41,7 +41,7 @@ export function buildNoteReformatPrompt(notes: NoteForPrompt[], style: Processin
     )
     .join("\n\n");
 
-  return `You are helping convert raw study notes into a clean, well-organized study reviewer.
+  return `You are helping convert raw study memories into a clean, well-organized study reviewer.
 
 TASK
 Reformat the study material below into clean, organized Markdown. ${STYLE_INSTRUCTIONS[style]}
@@ -67,7 +67,7 @@ FORMATTING GUIDE — use standard GitHub-flavored Markdown:
 - Triple-backtick fenced code blocks only for actual code/formulas that need monospacing.
 
 OUTPUT FORMAT
-Return ONLY the Markdown document itself — no JSON, no explanation, no preamble like "Here's the reformatted notes:", and do NOT wrap the whole thing in a \`\`\`markdown code fence. Just output the Markdown text directly, starting with the "# Title" heading.
+Return ONLY the Markdown document itself — no JSON, no explanation, no preamble like "Here's the reformatted memories:", and do NOT wrap the whole thing in a \`\`\`markdown code fence. Just output the Markdown text directly, starting with the "# Title" heading.
 
 SOURCE MATERIAL
 ${sourceBlock}
@@ -84,13 +84,13 @@ export function buildSourcePackage(
   notes: (NoteForPrompt & { id: string; sourceType: string; updatedAt: Date })[],
   style: ProcessingStyle
 ): string {
-  const header = `MEMORIA SOURCE PACKAGE\nGenerated ${new Date().toISOString()}\n${notes.length} note(s) included\n`;
+  const header = `MEMORIA SOURCE PACKAGE\nGenerated ${new Date().toISOString()}\n${notes.length} ${notes.length === 1 ? "memory" : "memories"} included\n`;
 
   const body = notes
     .map((note, i) => {
       return [
         "==============================",
-        `NOTE ${i + 1}: ${note.title}`,
+        `MEMORY ${i + 1}: ${note.title}`,
         "==============================",
         `Source type: ${note.sourceType}`,
         `Last updated: ${note.updatedAt.toISOString()}`,

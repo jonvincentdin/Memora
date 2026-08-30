@@ -1,6 +1,6 @@
 const steps = [
-  { label: "Import", text: "Upload your PDF or TXT notes into Memoria." },
-  { label: "Generate a prompt", text: "Memoria writes a ready-to-use prompt from your notes." },
+  { label: "Import", text: "Upload your PDF or TXT memories into Memoria." },
+  { label: "Generate a prompt", text: "Memoria writes a ready-to-use prompt from your memories." },
   { label: "Paste into Claude", text: "Take the prompt to Claude or another AI assistant you already use." },
   { label: "Import the result", text: "Bring the structured file back into Memoria and review it before saving." },
   { label: "Study", text: "Turn it into quizzes, exams, and flashcards, and track your progress." },

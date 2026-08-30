@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/utils";
 
 const quickActions = [
-  { href: "/notes/import", label: "Import Note", icon: FileInput },
+  { href: "/notes/import", label: "Import Memory", icon: FileInput },
   { href: "/reviewers", label: "Create Reviewer", icon: Layers },
   { href: "/quizzes", label: "Create Quiz", icon: ListChecks },
   { href: "/study", label: "Start Study Session", icon: PlayCircle },
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       {noteCount > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <Card className="p-4">
-            <p className="text-xs uppercase tracking-wide text-ink-faint">Notes in library</p>
+            <p className="text-xs uppercase tracking-wide text-ink-faint">Memories in library</p>
             <p className="mt-1 font-display text-2xl text-ink">{noteCount}</p>
           </Card>
           <Card className="p-4">
@@ -80,13 +80,13 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Recent notes</h2>
+        <h2 className="mb-3 font-display text-lg text-ink">Recent memories</h2>
         {recentNotes.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Your study library is empty."
-            description="Import your first note to get started."
-            actionLabel="Import your first note"
+            description="Import your first memory to get started."
+            actionLabel="Import your first memory"
             actionHref="/notes/import"
           />
         ) : (
@@ -106,8 +106,8 @@ export default async function DashboardPage() {
         {recentReviewers.length === 0 ? (
           <EmptyState
             icon={Layers}
-            title="Turn your notes into your first reviewer."
-            description="Select notes and generate a structured reviewer."
+            title="Turn your memories into your first reviewer."
+            description="Select memories and generate a structured reviewer."
             actionLabel="Create a reviewer"
             actionHref="/reviewers"
           />
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
           <EmptyState
             icon={ListChecks}
             title="Create a quiz from your study material."
-            description="Pick notes or reviewers and generate quiz questions."
+            description="Pick memories or reviewers and generate quiz questions."
             actionLabel="Create a quiz"
             actionHref="/quizzes"
           />

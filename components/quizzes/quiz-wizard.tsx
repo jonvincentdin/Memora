@@ -208,9 +208,9 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
               </div>
             </>
           )}
-          <Label>Notes</Label>
+          <Label>Memories</Label>
           {notes.length === 0 ? (
-            <p className="text-sm text-ink-soft">No notes yet.</p>
+            <p className="text-sm text-ink-soft">No memories yet.</p>
           ) : (
             <div className="max-h-48 space-y-1.5 overflow-y-auto">
               {notes.map((n) => (

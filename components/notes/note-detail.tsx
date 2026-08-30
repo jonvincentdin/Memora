@@ -83,7 +83,7 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/notes" className="mb-4 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Back to notes
+        <ArrowLeft className="h-4 w-4" /> Back to memories
       </Link>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -103,8 +103,8 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
                   <Trash2 className="h-3.5 w-3.5 text-danger" />
                 </Button>
               }
-              title="Delete this note?"
-              description="This can't be undone. Reviewers built from this note will keep their content."
+              title="Delete this memory?"
+              description="This can't be undone. Reviewers built from this memory will keep their content."
               confirmLabel="Delete"
               destructive
               onConfirm={handleDelete}

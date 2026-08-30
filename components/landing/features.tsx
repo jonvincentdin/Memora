@@ -3,13 +3,13 @@ import { FileInput, Layers, ListChecks, Timer, GraduationCap, Share2, LineChart 
 const features = [
   {
     icon: FileInput,
-    title: "Import notes",
-    text: "Bring in notes from PDF or TXT files, or paste content from Google Docs and Notion.",
+    title: "Import memories",
+    text: "Bring in memories from PDF or TXT files, or paste content from Google Docs and Notion.",
   },
   {
     icon: Layers,
     title: "Build reviewers",
-    text: "Turn raw notes into organized reviewers with headings, tables, definitions, and callouts.",
+    text: "Turn raw memories into organized reviewers with headings, tables, definitions, and callouts.",
   },
   {
     icon: ListChecks,

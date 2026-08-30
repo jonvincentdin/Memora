@@ -14,13 +14,13 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const format = searchParams.get("format") === "json" ? "json" : "md";
-  if (!id) return NextResponse.json({ error: "Missing note id." }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "Missing memory id." }, { status: 400 });
 
   const allowed = await canView(user.id, "NOTE", id);
-  if (!allowed) return NextResponse.json({ error: "Note not found." }, { status: 404 });
+  if (!allowed) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
 
   const note = await findNoteById(id);
-  if (!note) return NextResponse.json({ error: "Note not found." }, { status: 404 });
+  if (!note) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
 
   const filenameSafe = note.title.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase();
 
@@ -30,7 +30,7 @@ export const GET = withApiErrorHandling(async (request: Request) => {
     return new NextResponse(payload, {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="memoria-note-${filenameSafe}-v1.json"`,
+        "Content-Disposition": `attachment; filename="memoria-memory-${filenameSafe}-v1.json"`,
       },
     });
   }

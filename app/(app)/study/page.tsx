@@ -52,7 +52,7 @@ export default async function StudyHubPage() {
           <EmptyState
             icon={GraduationCap}
             title="No reviewers yet."
-            description="Build a reviewer from your notes first, then study it here as flashcards."
+            description="Build a reviewer from your memories first, then study it here as flashcards."
             actionLabel="Create a reviewer"
             actionHref="/reviewers"
           />

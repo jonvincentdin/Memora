@@ -27,7 +27,7 @@ interface PickerRow { id: string; title: string }
 interface FeedbackRow { id: string; authorName: string | null; message: string; createdAt: string }
 
 const TABS: { type: ResourceType; label: string }[] = [
-  { type: "NOTE", label: "Notes" },
+  { type: "NOTE", label: "Memories" },
   { type: "REVIEWER", label: "Reviewers" },
   { type: "QUIZ", label: "Quizzes" },
 ];

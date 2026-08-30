@@ -120,7 +120,7 @@ export function ReviewerDetail({ reviewer, isOwner, autoSave }: ReviewerDetailPr
           {reviewer.description && <p className="mt-1 text-ink-soft">{reviewer.description}</p>}
           <p className="mt-1 text-xs text-ink-faint">
             Last updated {formatDate(reviewer.updatedAt)}
-            {reviewer.noteCount > 0 && ` · Built from ${reviewer.noteCount} note(s)`}
+            {reviewer.noteCount > 0 && ` · Built from ${reviewer.noteCount} ${reviewer.noteCount === 1 ? "memory" : "memories"}`}
           </p>
 
           <div className="mt-6 border-t border-line pt-6">

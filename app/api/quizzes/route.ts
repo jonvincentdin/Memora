@@ -31,7 +31,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   }
 
   for (const id of parsed.data.noteIds) {
-    if (!(await canView(user.id, "NOTE", id))) return NextResponse.json({ error: "One or more notes could not be found." }, { status: 404 });
+    if (!(await canView(user.id, "NOTE", id))) return NextResponse.json({ error: "One or more memories could not be found." }, { status: 404 });
   }
   for (const id of parsed.data.reviewerIds) {
     if (!(await canView(user.id, "REVIEWER", id))) return NextResponse.json({ error: "One or more reviewers could not be found." }, { status: 404 });

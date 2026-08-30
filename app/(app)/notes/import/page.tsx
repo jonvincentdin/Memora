@@ -148,7 +148,7 @@ export default function ImportNotePage() {
   async function handlePastedSave() {
     setError(null);
     if (!pastedContent.trim()) {
-      setError("Paste the note content first.");
+      setError("Paste the memory content first.");
       return;
     }
 
@@ -158,7 +158,7 @@ export default function ImportNotePage() {
         const withProtocol = /^https?:\/\//i.test(link) ? link : `https://${link}`;
         resolvedTitle = new URL(withProtocol).hostname;
       } catch {
-        resolvedTitle = "Imported note";
+        resolvedTitle = "Imported memory";
       }
     }
 
@@ -167,7 +167,7 @@ export default function ImportNotePage() {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: resolvedTitle || "Imported note", content: pastedContent }),
+        body: JSON.stringify({ title: resolvedTitle || "Imported memory", content: pastedContent }),
       });
       const data = await res.json().catch(() => null);
       if (!data) {
@@ -233,9 +233,9 @@ export default function ImportNotePage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-display text-2xl text-ink">Import a note</h1>
+      <h1 className="font-display text-2xl text-ink">Import a memory</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Bring in material from a file or a link. Notes are stored as Markdown, so headings, bold text, lists, and
+        Bring in material from a file or a link. Memories are stored as Markdown, so headings, bold text, lists, and
         tables all carry over.
       </p>
 
@@ -307,7 +307,7 @@ export default function ImportNotePage() {
               <>
                 <div className="mt-4">
                   <Label htmlFor="import-title">Title</Label>
-                  <Input id="import-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Untitled note" />
+                  <Input id="import-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Untitled memory" />
                 </div>
 
                 <div className="mt-4">
@@ -317,7 +317,7 @@ export default function ImportNotePage() {
                     rows={8}
                     value={pastedContent}
                     onChange={(e) => setPastedContent(e.target.value)}
-                    placeholder="# Paste your exported note here…"
+                    placeholder="# Paste your exported memory here…"
                     className="font-mono text-sm"
                   />
                 </div>
@@ -333,7 +333,7 @@ export default function ImportNotePage() {
                   Cancel
                 </Button>
                 <Button onClick={handlePastedSave} loading={status === "processing"} disabled={!pastedContent.trim()}>
-                  Save note
+                  Save memory
                 </Button>
               </div>
             )}

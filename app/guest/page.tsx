@@ -27,7 +27,7 @@ export default function GuestPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="font-display text-2xl text-ink">Quick mode</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Get a ready-made prompt in one click, paste it (and your notes) into Claude, then bring the result back
+        Get a ready-made prompt in one click, paste it (and your memories) into Claude, then bring the result back
         here to preview and export. No account, no saving.
       </p>
 

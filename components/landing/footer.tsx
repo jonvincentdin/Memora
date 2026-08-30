@@ -9,7 +9,7 @@ export function LandingFooter() {
           <BookMarked className="h-4 w-4 text-accent-dark" />
           Memoria
         </div>
-        <p>Turn your notes into knowledge.</p>
+        <p>Turn your memories into knowledge.</p>
         <div className="flex gap-4">
           <Link href="/login" className="hover:text-ink">Sign in</Link>
           <Link href="/register" className="hover:text-ink">Get started</Link>

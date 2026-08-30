@@ -23,7 +23,7 @@ export const GET = withApiErrorHandling(async (request: Request, context: RouteC
 
 function collectionMarkdown(collection: NonNullable<Awaited<ReturnType<typeof getPublicCollectionBySlug>>>) {
   const rows = [`# ${collection.title}`, collection.description ?? "", `*Shared by ${collection.ownerName} · Made with Memoria*`];
-  for (const note of collection.notes) rows.push(`\n# Note: ${note.title}\n`, note.description ?? "", note.content);
+  for (const note of collection.notes) rows.push(`\n# Memory: ${note.title}\n`, note.description ?? "", note.content);
   for (const reviewer of collection.reviewers) rows.push(`\n# Reviewer: ${reviewer.title}\n`, reviewer.description ?? "", reviewer.content);
   for (const quiz of collection.quizzes) {
     const questions = quiz.questions as QuizQuestion[];
