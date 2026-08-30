@@ -51,7 +51,7 @@ async function copyCollectionPlacement(tx: Transaction, ownerId: string, resourc
 async function duplicateResource(tx: Transaction, ownerId: string, resourceType: ResourceType, id: string) {
   if (resourceType === "NOTE") {
     const source = await tx.note.findFirst({ where: { id, ownerId }, include: { tags: { select: { tagId: true } } } });
-    if (!source) throw new Error("Memory not found.");
+    if (!source) throw new Error("Note not found.");
     const copy = await tx.note.create({
       data: {
         ownerId,

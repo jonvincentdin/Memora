@@ -15,7 +15,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     prisma.quiz.findMany({ where: { ownerId: user.id, archivedAt: null, OR: [{ title: match }, { description: match }] }, select: { id: true, title: true, description: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 30 }),
   ]) : [[], [], []];
   const sections = [
-    { label: "Memories", icon: FileText, rows: notes, path: "/notes" },
+    { label: "Notes", icon: FileText, rows: notes, path: "/notes" },
     { label: "Reviewers", icon: Layers, rows: reviewers, path: "/reviewers" },
     { label: "Quizzes", icon: ListChecks, rows: quizzes, path: "/quizzes" },
   ];

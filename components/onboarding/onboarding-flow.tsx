@@ -247,7 +247,7 @@ export function OnboardingFlow({ initialName, email, configuredProviders }: Onbo
                   </label>
                   <label className="flex items-start gap-3 text-sm text-ink">
                     <input className="mt-0.5" type="checkbox" checked={autoSave} onChange={(event) => setAutoSave(event.target.checked)} />
-                    <span>Auto-save memories and reviewers while editing</span>
+                    <span>Auto-save notes and reviewers while editing</span>
                   </label>
                 </div>
               </div>

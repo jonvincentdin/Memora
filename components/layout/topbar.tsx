@@ -81,7 +81,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
             else if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.min(suggestions.length - 1, current + 1)); }
             else if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => Math.max(-1, current - 1)); }
           }}
-          placeholder="Search memories, reviewers, quizzes…"
+          placeholder="Search notes, reviewers, quizzes…"
           role="combobox"
           aria-label="Search your study material"
           aria-expanded={searchOpen}
@@ -98,7 +98,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
             {!searching && suggestions.length === 0 ? (
               <div className="p-3">
                 <p className="text-sm text-ink-soft">{query.trim() ? "No quick matches. Try searching all results." : "Your library is empty. Import something to make it searchable."}</p>
-                {!query.trim() && <Link href="/notes/import" onClick={() => setSearchOpen(false)} className="mt-2 inline-flex text-sm font-medium text-accent-dark hover:underline">Import your first memory</Link>}
+                {!query.trim() && <Link href="/notes/import" onClick={() => setSearchOpen(false)} className="mt-2 inline-flex text-sm font-medium text-accent-dark hover:underline">Import your first note</Link>}
               </div>
             ) : suggestions.map((suggestion, index) => {
               const Icon = suggestion.type === "note" ? FileText : suggestion.type === "reviewer" ? Layers : ListChecks;
@@ -109,7 +109,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
               </button>;
             })}
             {query.trim() && <button type="submit" onMouseEnter={() => setSelectedIndex(-1)} className="mt-1 flex w-full items-center justify-between border-t border-line px-3 py-3 text-left text-sm font-medium text-ink hover:bg-ink/[0.03]"><span>Search all for “{query.trim()}”</span><ArrowRight className="h-4 w-4" /></button>}
-            {!query.trim() && suggestions.length > 0 && <div className="mt-1 grid grid-cols-3 gap-1 border-t border-line pt-2">{[["Memories", "/notes"], ["Reviewers", "/reviewers"], ["Quizzes", "/quizzes"]].map(([label, href]) => <Link key={href} href={href} onClick={() => setSearchOpen(false)} className="rounded-md px-2 py-2 text-center text-xs text-ink-soft hover:bg-ink/5 hover:text-ink">Browse {label}</Link>)}</div>}
+            {!query.trim() && suggestions.length > 0 && <div className="mt-1 grid grid-cols-3 gap-1 border-t border-line pt-2">{[["Notes", "/notes"], ["Reviewers", "/reviewers"], ["Quizzes", "/quizzes"]].map(([label, href]) => <Link key={href} href={href} onClick={() => setSearchOpen(false)} className="rounded-md px-2 py-2 text-center text-xs text-ink-soft hover:bg-ink/5 hover:text-ink">Browse {label}</Link>)}</div>}
           </div>
         )}
       </form>

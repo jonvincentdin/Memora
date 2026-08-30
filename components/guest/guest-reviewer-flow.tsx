@@ -20,7 +20,7 @@ const PROCESSING_STYLES = [
   { value: "exam_focused", label: "Exam Focused" },
 ] as const;
 
-const PLACEHOLDER_NOTE = "[Paste your memories here before sending this prompt to the AI]";
+const PLACEHOLDER_NOTE = "[Paste your notes here before sending this prompt to the AI]";
 
 export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: "reviewer" | "flashcards" }) {
   const [notesText, setNotesText] = useState("");
@@ -70,7 +70,7 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
       const res = await fetch("/api/guest/prompts/note", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title || "My memories", content: notesText.trim() || PLACEHOLDER_NOTE, style }),
+        body: JSON.stringify({ title: title || "My notes", content: notesText.trim() || PLACEHOLDER_NOTE, style }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -106,9 +106,9 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
   return (
     <div className="space-y-5">
       <div className="card p-5">
-        <p className="mb-3 text-sm font-medium text-ink">1. Add your memories (optional but recommended)</p>
+        <p className="mb-3 text-sm font-medium text-ink">1. Add your notes (optional but recommended)</p>
         <p className="mb-3 text-xs text-ink-soft">
-          Paste your memories below, or upload a file — either way they get embedded directly into the prompt.
+          Paste your notes below, or upload a file — either way they get embedded directly into the prompt.
           Skip this and the prompt will include a placeholder you can fill in yourself inside Claude.
         </p>
         <FileDropzone onFileSelected={handleFileUpload} accept=".md,.txt,.pdf,.docx,.json" />
@@ -118,7 +118,7 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
           rows={6}
           value={notesText}
           onChange={(e) => setNotesText(e.target.value)}
-          placeholder="Paste your raw memories here…"
+          placeholder="Paste your raw notes here…"
           className="mt-3 font-mono text-sm"
         />
         <div className="mt-3 flex items-center gap-2">

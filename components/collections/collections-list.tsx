@@ -61,7 +61,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
         <div>
           <h1 className="font-display text-2xl text-ink">Collections</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            Bundle memories, reviewers, and quizzes, then share privately with specific people or publish a read-only link.
+            Bundle notes, reviewers, and quizzes, then share privately with specific people or publish a read-only link.
           </p>
         </div>
         <Button onClick={() => setCreating((value) => !value)}>
@@ -94,7 +94,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
           <EmptyState
             icon={FolderOpen}
             title="No collections yet."
-            description="Create one, then pick which memories, reviewers, and quizzes to include."
+            description="Create one, then pick which notes, reviewers, and quizzes to include."
           />
         </div>
       ) : (

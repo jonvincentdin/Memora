@@ -69,7 +69,7 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
       savedValues.current = { title, content };
       setSaved(true);
       setIsEditing(false);
-      // Clear the client router cache so the Memories list and dashboard
+      // Clear the client router cache so the Notes list and dashboard
       // immediately receive the updated title and timestamp on navigation.
       router.refresh();
       setTimeout(() => setSaved(false), 2000);
@@ -96,7 +96,7 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/notes" className="mb-4 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Back to memories
+        <ArrowLeft className="h-4 w-4" /> Back to notes
       </Link>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -104,7 +104,7 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
         <div className="flex flex-wrap items-center justify-end gap-2">
           {canEdit && !isEditing && (
             <Button variant="primary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => { setSaved(false); setIsEditing(true); }}>
-              <Pencil className="h-3.5 w-3.5" /> Edit memory
+              <Pencil className="h-3.5 w-3.5" /> Edit note
             </Button>
           )}
           <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "md", label: "Markdown" }, { value: "json", label: "Memoria JSON" }]} onExport={handleExport} />
@@ -124,8 +124,8 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
                   <Trash2 className="h-3.5 w-3.5 text-danger" />
                 </Button>
               }
-              title="Delete this memory?"
-              description="This can't be undone. Reviewers built from this memory will keep their content."
+              title="Delete this note?"
+              description="This can't be undone. Reviewers built from this note will keep their content."
               confirmLabel="Delete"
               destructive
               onConfirm={handleDelete}

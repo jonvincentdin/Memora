@@ -45,7 +45,7 @@ export default async function SharedWithMePage() {
           <EmptyState
             icon={Share2}
             title="Nothing shared with you yet."
-            description="When someone shares a memory, reviewer, or quiz with your account, it'll show up here."
+            description="When someone shares a note, reviewer, or quiz with your account, it'll show up here."
           />
         </div>
       ) : (

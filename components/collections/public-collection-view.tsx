@@ -24,7 +24,7 @@ export function PublicCollectionView({ collection }: { collection: PublicCollect
   );
 
   const allSections: { key: SectionKey; label: string; icon: typeof FileText; count: number }[] = [
-    { key: "notes", label: "Memories", icon: FileText, count: collection.notes.length },
+    { key: "notes", label: "Notes", icon: FileText, count: collection.notes.length },
     { key: "reviewers", label: "Reviewers", icon: ScrollText, count: collection.reviewers.length },
     { key: "quizzes", label: "Quizzes", icon: HelpCircle, count: collection.quizzes.length },
     { key: "flashcards", label: "Flashcards", icon: Layers, count: flashcardsByReviewer.length },

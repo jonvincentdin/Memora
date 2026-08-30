@@ -40,8 +40,8 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
         <EmptyState
           icon={ListChecks}
           title="Create a quiz from your study material."
-          description="Pick memories or reviewers above and generate quiz questions."
-          actionLabel={notes.length > 0 || reviewers.length > 0 ? "Choose existing study material" : "Import a memory first"}
+          description="Pick notes or reviewers above and generate quiz questions."
+          actionLabel={notes.length > 0 || reviewers.length > 0 ? "Choose existing study material" : "Import a note first"}
           actionHref={notes.length > 0 || reviewers.length > 0 ? "/quizzes?create=1" : "/notes/import"}
         />
       ) : (

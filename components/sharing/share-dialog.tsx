@@ -144,7 +144,7 @@ export function ShareDialog({ resourceType, resourceId }: { resourceType: "NOTE"
 
             {resourceType === "NOTE" && (
               <section className="rounded-lg border border-line bg-ink/[0.02] p-4">
-                <div className="flex items-start gap-3"><Link2 className="mt-0.5 h-4 w-4 text-accent-dark" /><div className="min-w-0 flex-1"><p className="text-sm font-medium text-ink">Anyone with the link</p><p className="mt-0.5 text-xs text-ink-soft">People can read this Memory without signing in. They cannot edit it.</p></div></div>
+                <div className="flex items-start gap-3"><Link2 className="mt-0.5 h-4 w-4 text-accent-dark" /><div className="min-w-0 flex-1"><p className="text-sm font-medium text-ink">Anyone with the link</p><p className="mt-0.5 text-xs text-ink-soft">People can read this note without signing in. They cannot edit it.</p></div></div>
                 {publicUrl ? (
                   <div className="mt-3">
                     <div className="flex gap-2"><Input readOnly value={publicUrl} aria-label="Public view link" /><Button size="sm" onClick={copyPublicLink}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy"}</Button></div>

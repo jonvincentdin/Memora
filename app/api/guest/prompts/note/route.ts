@@ -12,7 +12,7 @@ const VALID_STYLES: ProcessingStyle[] = ["preserve", "balanced", "condensed", "e
 const MAX_GUEST_CONTENT_CHARS = 60_000;
 
 const bodySchema = z.object({
-  title: z.string().min(1).max(200).default("My memories"),
+  title: z.string().min(1).max(200).default("My notes"),
   content: z.string().min(1).max(MAX_GUEST_CONTENT_CHARS),
   style: z.enum(["preserve", "balanced", "condensed", "exam_focused"]).default("balanced"),
 });

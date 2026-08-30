@@ -27,11 +27,11 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   };
 
   if (noteIds.length === 0 && reviewerIds.length === 0) {
-    return NextResponse.json({ error: "Select at least one memory or reviewer." }, { status: 400 });
+    return NextResponse.json({ error: "Select at least one note or reviewer." }, { status: 400 });
   }
 
   for (const id of noteIds) {
-    if (!(await canView(user.id, "NOTE", id))) return NextResponse.json({ error: "One or more memories could not be found." }, { status: 404 });
+    if (!(await canView(user.id, "NOTE", id))) return NextResponse.json({ error: "One or more notes could not be found." }, { status: 404 });
   }
   for (const id of reviewerIds) {
     if (!(await canView(user.id, "REVIEWER", id))) return NextResponse.json({ error: "One or more reviewers could not be found." }, { status: 404 });

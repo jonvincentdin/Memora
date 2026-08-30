@@ -191,7 +191,7 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
 
       {step === 1 && (
         <div>
-          <p className="mb-4 text-sm text-ink-soft">Choose existing Memories or reviewers from your library. You do not need to upload the same material again.</p>
+          <p className="mb-4 text-sm text-ink-soft">Choose existing notes or reviewers from your library. You do not need to upload the same material again.</p>
           {reviewers.length > 0 && (
             <>
               <Label>Reviewers</Label>
@@ -209,9 +209,9 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
               </div>
             </>
           )}
-          <Label>Existing Memories</Label>
+          <Label>Existing Notes</Label>
           {notes.length === 0 ? (
-            <p className="text-sm text-ink-soft">No memories yet.</p>
+            <p className="text-sm text-ink-soft">No notes yet.</p>
           ) : (
             <div className="max-h-48 space-y-1.5 overflow-y-auto">
               {notes.map((n) => (
