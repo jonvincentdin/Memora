@@ -171,6 +171,6 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   );
 }
 
-interface SearchItem { id: string; title: string; isFavorite?: boolean; tags: Array<{ tag: { id: string; name: string } }> }
+interface SearchItem { id: string; title: string; isFavorite?: boolean; tags: Array<{ tag: { id: string; name: string; color: string | null } }> }
 interface SearchResponse { notes: SearchItem[]; reviewers: SearchItem[]; quizzes: SearchItem[] }
 interface SearchSuggestion extends SearchItem { type: "note" | "reviewer" | "quiz"; href: string }

@@ -15,7 +15,7 @@ import { createResourceRevision } from "@/lib/revisions";
  */
 export type Note = Omit<DbNote, "content"> & { content: string };
 export type NoteSummary = Omit<DbNote, "content"> & {
-  tags: Array<{ tag: { id: string; name: string } }>;
+  tags: Array<{ tag: { id: string; name: string; color: string | null } }>;
 };
 
 function hydrate(note: DbNote): Note {
@@ -116,7 +116,7 @@ export async function findNoteSummariesByOwner(ownerId: string, options: { archi
       isFavorite: true,
       createdAt: true,
       updatedAt: true,
-      tags: { select: { tag: { select: { id: true, name: true } } } },
+      tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
     },
   });
 }
