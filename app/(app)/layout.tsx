@@ -8,7 +8,6 @@ import { SessionConflictModal } from "@/components/auth/session-conflict-modal";
 import { SessionHeartbeat } from "@/components/auth/session-heartbeat";
 import { calculateStudyStreak } from "@/lib/study-streak";
 import { cn } from "@/lib/utils";
-import { BackButton } from "@/components/layout/back-button";
 
 // This layout wraps every authenticated route (dashboard, notes, reviewers,
 // quizzes, study, shared, settings — see the route groups that reuse it via
@@ -35,7 +34,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col pb-16 lg:pb-0">
         <Topbar userName={user.name ?? user.email ?? "Account"} unreadNotifications={unreadNotifications} studyStreak={studyStreak} showBrandInitially={settings.sidebarMode === "HOVER" || settings.sidebarCollapsed} />
         <main className={cn("flex-1 px-4 sm:px-6 lg:px-8", settings.compactLayout ? "py-4" : "py-6")}>
-          <BackButton />
           {children}
         </main>
       </div>
