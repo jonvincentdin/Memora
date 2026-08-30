@@ -29,7 +29,11 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid tag." }, { status: 400 });
   if (!(await isOwner(user.id, parsed.data.resourceType, parsed.data.resourceId))) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  const tag = await prisma.tag.upsert({ where: { ownerId_name: { ownerId: user.id, name: parsed.data.name } }, create: { ownerId: user.id, name: parsed.data.name, color: parsed.data.color }, update: {} });
+  const tag = await prisma.tag.upsert({
+    where: { ownerId_name: { ownerId: user.id, name: parsed.data.name } },
+    create: { ownerId: user.id, name: parsed.data.name, color: parsed.data.color },
+    update: parsed.data.color ? { color: parsed.data.color } : {},
+  });
   if (parsed.data.resourceType === "NOTE") await prisma.noteTag.upsert({ where: { noteId_tagId: { noteId: parsed.data.resourceId, tagId: tag.id } }, create: { noteId: parsed.data.resourceId, tagId: tag.id }, update: {} });
   else if (parsed.data.resourceType === "REVIEWER") await prisma.reviewerTag.upsert({ where: { reviewerId_tagId: { reviewerId: parsed.data.resourceId, tagId: tag.id } }, create: { reviewerId: parsed.data.resourceId, tagId: tag.id }, update: {} });
   else await prisma.quizTag.upsert({ where: { quizId_tagId: { quizId: parsed.data.resourceId, tagId: tag.id } }, create: { quizId: parsed.data.resourceId, tagId: tag.id }, update: {} });
