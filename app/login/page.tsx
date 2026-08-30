@@ -12,6 +12,7 @@ import { loginSchema } from "@/lib/validation/auth";
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
     const result = await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
+      keepLoggedIn: keepLoggedIn ? "true" : "false",
       redirect: false,
     });
     setLoading(false);
@@ -71,7 +73,16 @@ export default function LoginPage() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
               />
-              <div className="mt-1 text-right">
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={keepLoggedIn}
+                    onChange={(event) => setKeepLoggedIn(event.target.checked)}
+                    className="h-4 w-4 rounded border-line accent-accent"
+                  />
+                  Keep me logged in
+                </label>
                 <Link href="/forgot-password" className="text-xs text-ink-soft hover:text-ink hover:underline">
                   Forgot password?
                 </Link>
