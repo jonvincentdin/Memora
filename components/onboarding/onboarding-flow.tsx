@@ -15,7 +15,16 @@ const steps = [
   { label: "Preferences", icon: Palette },
 ];
 
-export function OnboardingFlow({ initialName, email }: { initialName: string; email: string }) {
+type Difficulty = "EASY" | "NORMAL" | "HARD" | "MIXED";
+type QuizMode = "QUIZ" | "PRACTICE_EXAM" | "MOCK_EXAM" | "TIMED_EXAM" | "MASTERY_TEST";
+
+interface OnboardingFlowProps {
+  initialName: string;
+  email: string;
+  configuredProviders: { google: boolean; notion: boolean };
+}
+
+export function OnboardingFlow({ initialName, email, configuredProviders }: OnboardingFlowProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [step, setStep] = useState(0);
@@ -23,6 +32,10 @@ export function OnboardingFlow({ initialName, email }: { initialName: string; em
   const [provider, setProvider] = useState<"OPENAI" | "ANTHROPIC" | "GEMINI">("OPENAI");
   const [apiKey, setApiKey] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
+  const [difficulty, setDifficulty] = useState<Difficulty>("MIXED");
+  const [quizMode, setQuizMode] = useState<QuizMode>("QUIZ");
+  const [showExplanations, setShowExplanations] = useState(true);
+  const [autoSave, setAutoSave] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +63,14 @@ export function OnboardingFlow({ initialName, email }: { initialName: string; em
       await checkedFetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appearance: theme, defaultQuestionCount: questionCount }),
+        body: JSON.stringify({
+          appearance: theme,
+          defaultQuestionCount: questionCount,
+          defaultDifficulty: difficulty,
+          defaultQuizMode: quizMode,
+          showExplanations,
+          autoSave,
+        }),
       });
     }
   }
@@ -154,15 +174,14 @@ export function OnboardingFlow({ initialName, email }: { initialName: string; em
               <div>
                 <p className="text-sm text-ink-soft">Connect your own accounts. Memoria never shares these connections with other users.</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <a target="_blank" rel="noreferrer" href="/api/integrations/google/connect" className="rounded-lg border border-line p-4 text-sm font-medium text-ink hover:border-accent">
-                    Connect Google Drive
-                    <span className="mt-1 block text-xs font-normal text-ink-soft">Optional · opens Google OAuth</span>
-                  </a>
-                  <a target="_blank" rel="noreferrer" href="/api/integrations/notion/connect" className="rounded-lg border border-line p-4 text-sm font-medium text-ink hover:border-accent">
-                    Connect Notion
-                    <span className="mt-1 block text-xs font-normal text-ink-soft">Optional · opens Notion OAuth</span>
-                  </a>
+                  <ConnectionOption provider="Google Drive" href="/api/integrations/google/connect" configured={configuredProviders.google} />
+                  <ConnectionOption provider="Notion" href="/api/integrations/notion/connect" configured={configuredProviders.notion} />
                 </div>
+                {(!configuredProviders.google || !configuredProviders.notion) && (
+                  <p className="mt-3 rounded-lg border border-line bg-ink/[0.02] p-3 text-xs text-ink-soft">
+                    Unavailable connections need valid OAuth credentials from the app administrator. You can safely skip this step and connect them later in Settings.
+                  </p>
+                )}
               </div>
             )}
 
@@ -196,9 +215,40 @@ export function OnboardingFlow({ initialName, email }: { initialName: string; em
                     ))}
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="setup-count">Default quiz questions</Label>
-                  <Input id="setup-count" type="number" min={1} max={100} value={questionCount} onChange={(event) => setQuestionCount(Math.min(100, Math.max(1, Number(event.target.value) || 1)))} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="setup-count">Default quiz questions</Label>
+                    <Input id="setup-count" type="number" min={1} max={100} value={questionCount} onChange={(event) => setQuestionCount(Math.min(100, Math.max(1, Number(event.target.value) || 1)))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="setup-mode">Default test type</Label>
+                    <select id="setup-mode" value={quizMode} onChange={(event) => setQuizMode(event.target.value as QuizMode)} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">
+                      <option value="QUIZ">Quiz</option>
+                      <option value="PRACTICE_EXAM">Practice exam</option>
+                      <option value="MOCK_EXAM">Mock exam</option>
+                      <option value="TIMED_EXAM">Timed exam</option>
+                      <option value="MASTERY_TEST">Mastery test</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="setup-difficulty">Default difficulty</Label>
+                    <select id="setup-difficulty" value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">
+                      <option value="MIXED">Mixed</option>
+                      <option value="EASY">Easy</option>
+                      <option value="NORMAL">Normal</option>
+                      <option value="HARD">Hard</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-3 rounded-lg border border-line bg-ink/[0.02] p-4">
+                  <label className="flex items-start gap-3 text-sm text-ink">
+                    <input className="mt-0.5" type="checkbox" checked={showExplanations} onChange={(event) => setShowExplanations(event.target.checked)} />
+                    <span>Show answer explanations during review sessions</span>
+                  </label>
+                  <label className="flex items-start gap-3 text-sm text-ink">
+                    <input className="mt-0.5" type="checkbox" checked={autoSave} onChange={(event) => setAutoSave(event.target.checked)} />
+                    <span>Auto-save notes and reviewers while editing</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -230,6 +280,24 @@ export function OnboardingFlow({ initialName, email }: { initialName: string; em
         </div>
       </div>
     </main>
+  );
+}
+
+function ConnectionOption({ provider, href, configured }: { provider: string; href: string; configured: boolean }) {
+  if (!configured) {
+    return (
+      <div aria-disabled="true" className="cursor-not-allowed rounded-lg border border-line bg-ink/[0.02] p-4 text-sm font-medium text-ink-faint">
+        Connect {provider}
+        <span className="mt-1 block text-xs font-normal">Temporarily unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <a target="_blank" rel="noreferrer" href={href} className="rounded-lg border border-line p-4 text-sm font-medium text-ink hover:border-accent">
+      Connect {provider}
+      <span className="mt-1 block text-xs font-normal text-ink-soft">Optional · opens {provider} OAuth</span>
+    </a>
   );
 }
 
