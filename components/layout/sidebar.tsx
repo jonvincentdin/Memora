@@ -32,10 +32,14 @@ export function Sidebar({ mode, initialCollapsed }: { mode: SidebarMode; initial
   const hoverMode = mode === "HOVER";
   const labelsHidden = !hoverMode && collapsed;
 
+  function announceSidebarState(isCollapsed: boolean) {
+    window.dispatchEvent(new CustomEvent("memoria:sidebar-state", { detail: { collapsed: isCollapsed } }));
+  }
+
   async function toggleCollapsed() {
     const next = !collapsed;
     setCollapsed(next);
-    window.dispatchEvent(new CustomEvent("memoria:sidebar-state", { detail: { collapsed: next } }));
+    announceSidebarState(next);
     await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -61,16 +65,22 @@ export function Sidebar({ mode, initialCollapsed }: { mode: SidebarMode; initial
   };
 
   return (
-    <div className={cn("hidden shrink-0 lg:block", hoverMode ? "w-0" : "sticky top-0 h-screen self-start", collapsed ? "w-16" : "w-60")}>
+    <div className={cn(
+      "hidden shrink-0 lg:block",
+      hoverMode ? "w-0" : ["sticky top-0 h-screen self-start", collapsed ? "w-16" : "w-60"]
+    )}>
       <aside className={cn(
         "group/sidebar relative flex shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200",
         hoverMode ? "fixed inset-y-0 left-0 z-50 h-screen w-2 overflow-hidden shadow-card-hover hover:w-60" : "h-full",
         !hoverMode && (collapsed ? "w-16" : "w-60")
-      )}>
-        <div className={cn("flex h-16 shrink-0 items-center border-b border-line/60 px-3", labelsHidden ? "justify-center" : "justify-start", hoverMode && "min-w-60")}>
-          <div className={cn("flex items-center gap-2 overflow-hidden font-display text-lg text-ink", (labelsHidden || hoverMode) && "invisible")}>
+      )}
+        onMouseEnter={hoverMode ? () => announceSidebarState(false) : undefined}
+        onMouseLeave={hoverMode ? () => announceSidebarState(true) : undefined}
+      >
+        <div className={cn("flex h-16 shrink-0 items-center border-b border-line px-3", labelsHidden ? "justify-center" : "justify-start", hoverMode && "min-w-60")}>
+          <div className={cn("flex items-center gap-2 overflow-hidden font-display text-lg text-ink", labelsHidden && "invisible", hoverMode && "opacity-0 transition-opacity group-hover/sidebar:opacity-100")}>
             <BookMarked className="h-5 w-5 shrink-0 text-accent-dark" />
-            <span className={cn("whitespace-nowrap transition-opacity", hoverMode && "opacity-0 group-hover/sidebar:opacity-100")}>Memoria</span>
+            <span className="whitespace-nowrap">Memoria</span>
           </div>
         </div>
         {!hoverMode && <button type="button" onClick={() => void toggleCollapsed()} aria-label={collapsed ? "Open sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} className="absolute -right-4 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-card hover:border-accent hover:bg-accent-soft hover:text-ink">{collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}</button>}
