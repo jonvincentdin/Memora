@@ -19,6 +19,7 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [results, setResults] = useState<SearchResponse>({ notes: [], reviewers: [], quizzes: [] });
   const searchRef = useRef<HTMLFormElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const suggestions = useMemo<SearchSuggestion[]>(() => [
     ...results.notes.map((item) => ({ ...item, type: "note" as const, href: `/notes/${item.id}` })),
@@ -47,9 +48,17 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
       if (!searchRef.current?.contains(event.target as Node)) setSearchOpen(false);
+      if (!accountMenuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
     }
     document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, []);
 
   function handleSearch(e: React.FormEvent) {
@@ -146,23 +155,27 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
 
         <NotificationMenu initialUnreadCount={unreadNotifications} />
 
-        <div className="relative">
+        <div ref={accountMenuRef} className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-action text-sm font-medium text-action-foreground"
             aria-label="Account menu"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
           >
             {userName.charAt(0).toUpperCase()}
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-11 w-48 rounded-lg border border-line bg-surface py-1 shadow-card-hover">
+            <div role="menu" className="absolute right-0 top-11 w-48 rounded-lg border border-line bg-surface py-1 shadow-card-hover">
               <div className="border-b border-line px-3 py-2 text-sm text-ink-soft truncate">{userName}</div>
-              <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-ink/5">
+              <Link href="/settings" role="menuitem" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-ink/5">
                 <UserIcon className="h-4 w-4" /> Settings
               </Link>
               <button
+                role="menuitem"
                 disabled={signingOut}
                 onClick={async () => {
+                  setMenuOpen(false);
                   setSigningOut(true);
                   await signOut({ redirect: false });
                   router.replace("/");
