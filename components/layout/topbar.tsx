@@ -3,28 +3,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, ArrowLeft, Flame } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, ArrowLeft, Flame, BookMarked } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationMenu } from "@/components/notifications/notification-menu";
 import { TagList } from "@/components/library/tag-list";
 
-export function Topbar({ userName, unreadNotifications, studyStreak }: { userName: string; unreadNotifications: number; studyStreak: number }) {
+export function Topbar({ userName, unreadNotifications, studyStreak, showBrandInitially }: { userName: string; unreadNotifications: number; studyStreak: number; showBrandInitially: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showBrand, setShowBrand] = useState(showBrandInitially);
   const [signingOut, setSigningOut] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [results, setResults] = useState<SearchResponse>({ notes: [], reviewers: [], quizzes: [] });
   const searchRef = useRef<HTMLFormElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const suggestions = useMemo<SearchSuggestion[]>(() => [
     ...results.notes.map((item) => ({ ...item, type: "note" as const, href: `/notes/${item.id}` })),
     ...results.reviewers.map((item) => ({ ...item, type: "reviewer" as const, href: `/reviewers/${item.id}` })),
     ...results.quizzes.map((item) => ({ ...item, type: "quiz" as const, href: `/quizzes/${item.id}` })),
   ].slice(0, 10), [results]);
+
+  useEffect(() => {
+    setShowBrand(showBrandInitially);
+  }, [showBrandInitially]);
+
+  useEffect(() => {
+    function syncSidebarState(event: Event) {
+      setShowBrand((event as CustomEvent<{ collapsed: boolean }>).detail.collapsed);
+    }
+    window.addEventListener("memoria:sidebar-state", syncSidebarState);
+    return () => window.removeEventListener("memoria:sidebar-state", syncSidebarState);
+  }, []);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -47,9 +61,17 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
       if (!searchRef.current?.contains(event.target as Node)) setSearchOpen(false);
+      if (!accountMenuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
     }
     document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, []);
 
   function handleSearch(e: React.FormEvent) {
@@ -71,6 +93,7 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-paper/90 px-4 backdrop-blur sm:px-6">
+      {showBrand && <Link href="/dashboard" aria-label="Memoria dashboard" className="hidden shrink-0 items-center gap-2 font-display text-lg text-ink sm:inline-flex"><BookMarked className="h-5 w-5 text-accent-dark" /><span>Memoria</span></Link>}
       <button
         type="button"
         onClick={() => window.history.length > 1 ? router.back() : router.push("/dashboard")}
@@ -146,23 +169,27 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
 
         <NotificationMenu initialUnreadCount={unreadNotifications} />
 
-        <div className="relative">
+        <div ref={accountMenuRef} className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-action text-sm font-medium text-action-foreground"
             aria-label="Account menu"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
           >
             {userName.charAt(0).toUpperCase()}
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-11 w-48 rounded-lg border border-line bg-surface py-1 shadow-card-hover">
+            <div role="menu" className="absolute right-0 top-11 w-48 rounded-lg border border-line bg-surface py-1 shadow-card-hover">
               <div className="border-b border-line px-3 py-2 text-sm text-ink-soft truncate">{userName}</div>
-              <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-ink/5">
+              <Link href="/settings" role="menuitem" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-ink/5">
                 <UserIcon className="h-4 w-4" /> Settings
               </Link>
               <button
+                role="menuitem"
                 disabled={signingOut}
                 onClick={async () => {
+                  setMenuOpen(false);
                   setSigningOut(true);
                   await signOut({ redirect: false });
                   router.replace("/");

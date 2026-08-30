@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className={cn("flex min-h-screen bg-paper", settings.reduceMotion && "reduce-motion", settings.compactLayout && "compact-layout")}>
       <Sidebar mode={settings.sidebarMode === "HOVER" ? "HOVER" : "MANUAL"} initialCollapsed={settings.sidebarCollapsed} />
       <div className="flex min-w-0 flex-1 flex-col pb-16 lg:pb-0">
-        <Topbar userName={user.name ?? user.email ?? "Account"} unreadNotifications={unreadNotifications} studyStreak={studyStreak} />
+        <Topbar userName={user.name ?? user.email ?? "Account"} unreadNotifications={unreadNotifications} studyStreak={studyStreak} showBrandInitially={settings.sidebarMode === "HOVER" || settings.sidebarCollapsed} />
         <main className={cn("flex-1 px-4 sm:px-6 lg:px-8", settings.compactLayout ? "py-4" : "py-6")}>{children}</main>
       </div>
       <MobileNav />
