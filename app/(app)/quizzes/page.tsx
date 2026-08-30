@@ -19,7 +19,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
       orderBy: { updatedAt: "desc" },
       skip: (page - 1) * 24,
       take: 24,
-      select: { id: true, title: true, mode: true, questions: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } },
+      select: { id: true, title: true, mode: true, questions: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } },
     }),
     prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
     prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),

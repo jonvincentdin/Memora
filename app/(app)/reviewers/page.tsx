@@ -14,7 +14,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ cre
   const user = await requireUser();
   const page = Math.max(1, Number(searchParams.page) || 1);
   const [reviewers, notes] = await Promise.all([
-    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, skip: (page - 1) * 24, take: 24, select: { id: true, title: true, description: true, style: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, skip: (page - 1) * 24, take: 24, select: { id: true, title: true, description: true, style: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } } }),
     prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
   ]);
 
