@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/utils";
+import { SharedNavigation } from "@/components/sharing/shared-navigation";
 
 interface CollectionSummary {
   id: string;
@@ -68,6 +69,7 @@ export function CollectionsList({ initialCollections }: { initialCollections: Co
           <Plus className="mr-1.5 h-4 w-4" /> New collection
         </Button>
       </div>
+      <div className="mt-4"><SharedNavigation /></div>
 
       {creating && (
         <div className="card mt-4 p-5">

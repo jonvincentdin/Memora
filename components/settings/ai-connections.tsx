@@ -37,10 +37,10 @@ export function AiConnections({ initialConnections, defaults }: { initialConnect
   }
 
   return (
-    <section className="mt-8">
+    <section id="ai-providers" className="card mt-5 scroll-mt-24 p-5">
       <div className="mb-3 flex items-center gap-2"><Bot className="h-5 w-5 text-accent" /><h2 className="font-display text-xl text-ink">AI providers</h2></div>
       <p className="mb-4 text-sm text-ink-soft">Use your own provider key for one-click generation. Keys are encrypted and never shown again.</p>
-      <div className="card space-y-4 p-4">
+      <div className="space-y-4 rounded-lg border border-line p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div><Label htmlFor="ai-provider">Provider</Label><select id="ai-provider" value={provider} onChange={(event) => { const next = event.target.value as Provider; setProvider(next); setModel(defaults[next]); }} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">{(Object.keys(LABELS) as Provider[]).map((item) => <option key={item} value={item}>{LABELS[item]}</option>)}</select></div>
           <div><Label htmlFor="ai-model">Model</Label><Input id="ai-model" value={model} onChange={(event) => setModel(event.target.value)} /></div>

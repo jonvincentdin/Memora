@@ -18,6 +18,16 @@
   --color-danger: 196 67 61;
 }
 
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+
 /* Applied to <html> by the theme provider (components/layout/theme-provider.tsx).
    Also set from an inline script in app/layout.tsx before hydration so there
    is no flash of the wrong theme on load — this works for signed-out

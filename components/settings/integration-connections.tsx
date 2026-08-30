@@ -35,7 +35,7 @@ export function IntegrationConnections({ initialData }: { initialData: Integrati
   }
 
   return (
-    <section className="mt-8">
+    <section id="connections" className="card mt-5 scroll-mt-24 p-5">
       <div className="mb-3 flex items-center gap-2"><Cloud className="h-5 w-5 text-accent" /><h2 className="font-display text-xl text-ink">Connected accounts</h2></div>
       <p className="mb-4 text-sm text-ink-soft">Connect your own Drive or Notion workspace. Credentials are encrypted and available only to your Memoria account.</p>
       <div className="space-y-3">
@@ -44,7 +44,7 @@ export function IntegrationConnections({ initialData }: { initialData: Integrati
           const label = provider === "google" ? "Google Drive" : "Notion";
           const detail = connection?.metadata?.email || connection?.metadata?.workspaceName;
           return (
-            <div key={provider} className="card flex items-center justify-between gap-4 p-4">
+            <div key={provider} className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
               <div><p className="text-sm font-semibold text-ink">{label}</p><p className="text-xs text-ink-soft">{connection ? detail || "Connected" : data.configured[provider] === false ? "OAuth credentials need to be configured by the deployer." : "Not connected"}</p></div>
               {connection ? <Button variant="outline" size="sm" loading={busy === provider} onClick={() => void disconnect(provider)}><Unlink className="h-3.5 w-3.5" /> Disconnect</Button> : <Button size="sm" disabled={!data.configured[provider]} onClick={() => { window.location.href = `/api/integrations/${provider}/connect`; }}><Link2 className="h-3.5 w-3.5" /> Connect</Button>}
             </div>

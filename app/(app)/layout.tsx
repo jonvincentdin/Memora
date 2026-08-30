@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { SessionConflictModal } from "@/components/auth/session-conflict-modal";
 import { SessionHeartbeat } from "@/components/auth/session-heartbeat";
 import { calculateStudyStreak } from "@/lib/study-streak";
+import { cn } from "@/lib/utils";
 
 // This layout wraps every authenticated route (dashboard, notes, reviewers,
 // quizzes, study, shared, settings — see the route groups that reuse it via
@@ -14,7 +15,7 @@ import { calculateStudyStreak } from "@/lib/study-streak";
 // client-only route guard anywhere in the app.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const [unreadNotifications, account, recentReviews] = await Promise.all([
+  const [unreadNotifications, account, recentReviews, settings] = await Promise.all([
     prisma.notification.count({ where: { userId: user.id, readAt: null } }),
     prisma.user.findUnique({ where: { id: user.id }, select: { onboardingCompletedAt: true } }),
     prisma.flashcardReview.findMany({
@@ -22,16 +23,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       select: { reviewedAt: true },
       orderBy: { reviewedAt: "desc" },
     }),
+    prisma.userSettings.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} }),
   ]);
   if (!account?.onboardingCompletedAt) redirect("/onboarding");
   const studyStreak = calculateStudyStreak(recentReviews.map((review) => review.reviewedAt));
 
   return (
-    <div className="flex min-h-screen bg-paper">
-      <Sidebar />
+    <div className={cn("flex min-h-screen bg-paper", settings.reduceMotion && "reduce-motion", settings.compactLayout && "compact-layout")}>
+      <Sidebar mode={settings.sidebarMode === "HOVER" ? "HOVER" : "MANUAL"} initialCollapsed={settings.sidebarCollapsed} />
       <div className="flex min-w-0 flex-1 flex-col pb-16 lg:pb-0">
         <Topbar userName={user.name ?? user.email ?? "Account"} unreadNotifications={unreadNotifications} studyStreak={studyStreak} />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className={cn("flex-1 px-4 sm:px-6 lg:px-8", settings.compactLayout ? "py-4" : "py-6")}>{children}</main>
       </div>
       <MobileNav />
       <SessionHeartbeat />

@@ -1,0 +1,5 @@
+ALTER TABLE "user_settings"
+ADD COLUMN "sidebarMode" TEXT NOT NULL DEFAULT 'MANUAL',
+ADD COLUMN "sidebarCollapsed" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "compactLayout" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "reduceMotion" BOOLEAN NOT NULL DEFAULT false;

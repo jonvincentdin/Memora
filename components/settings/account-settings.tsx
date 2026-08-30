@@ -38,7 +38,7 @@ export function AccountSettings({ initial }: { initial: { name: string; email: s
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Couldn't reach the server."); setBusy(null); }
   }
 
-  return <section className="mt-10 border-t border-line pt-8">
+  return <section id="account" className="card mt-5 scroll-mt-24 p-5">
     <h2 className="font-display text-lg text-ink">Account and privacy</h2>
     <p className="mt-1 text-sm text-ink-soft">Update your identity, password, or download everything stored in your account.</p>
     <div className="mt-4 grid gap-4 sm:grid-cols-2"><div><Label htmlFor="account-name">Name</Label><Input id="account-name" value={name} onChange={(event) => setName(event.target.value)} /></div><div><Label htmlFor="account-email">Email</Label><Input id="account-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div><div><Label htmlFor="current-password">Current password</Label><Input id="current-password" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="Required for email/password changes" /></div><div><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Leave blank to keep current" /></div></div>
