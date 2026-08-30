@@ -8,6 +8,7 @@ import { createReviewer } from "@/lib/reviewers-repo";
 import { createReviewerSchema } from "@/lib/validation/reviewer";
 import { createQuizSchema } from "@/lib/validation/quiz";
 import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export const POST = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
@@ -74,6 +75,9 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     notes.push(await createNote({ ownerId: user.id, title, description: item.description, originalFilename: item.file.name, sourceType, fileExtension: item.extension, content: item.text }));
   }
   if (!notes.length && !restored.length) return NextResponse.json({ error: errors[0]?.error ?? "No files could be imported.", errors, status: "failed", hasImageIssue, extractionPrompt: buildExtractionPrompt(extracted, errors) }, { status: 422 });
+  revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
   return NextResponse.json({ note: notes[0], notes, restored, redirect: restored.length === 1 && !notes.length ? restored[0].href : undefined, errors, status: errors.length ? "partial" : "complete" }, { status: 201 });
 });
 

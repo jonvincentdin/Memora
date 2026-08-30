@@ -4,6 +4,7 @@ import { requireUserOrNull } from "@/lib/auth/session";
 import { createNoteSchema } from "@/lib/validation/note";
 import { createNote } from "@/lib/notes-repo";
 import { withApiErrorHandling } from "@/lib/api/handler";
+import { revalidatePath } from "next/cache";
 
 export const GET = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
@@ -52,6 +53,10 @@ export const POST = withApiErrorHandling(async (request: Request) => {
     content: parsed.data.content,
     sourceType: "MANUAL",
   });
+
+  revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
 
   return NextResponse.json({ note }, { status: 201 });
 });

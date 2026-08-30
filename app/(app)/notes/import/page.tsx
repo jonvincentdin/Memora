@@ -55,6 +55,13 @@ export default function ImportNotePage() {
 
   const linkType = useMemo(() => detectLinkType(link), [link]);
 
+  function navigateAfterSave(href: string) {
+    router.push(href);
+    // A mutation can leave previously visited library pages in the App
+    // Router cache. Refresh after navigation so the new Memory is visible.
+    router.refresh();
+  }
+
   async function handleFileImport() {
     if (!file) return;
     setError(null);
@@ -99,9 +106,9 @@ export default function ImportNotePage() {
         return;
       }
       if (data.errors?.length) setNotice(`${(data.notes?.length ?? 0) + (data.restored?.length ?? 0)} imported; ${data.errors.length} failed. ${data.errors[0].error}`);
-      if (data.redirect) router.push(data.redirect);
-      else if ((data.notes?.length ?? 0) + (data.restored?.length ?? 0) > 1) router.push("/dashboard");
-      else if (data.note) router.push(`/notes/${data.note.id}`);
+      if (data.redirect) navigateAfterSave(data.redirect);
+      else if ((data.notes?.length ?? 0) + (data.restored?.length ?? 0) > 1) navigateAfterSave("/dashboard");
+      else if (data.note) navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -113,7 +120,7 @@ export default function ImportNotePage() {
     setStatus("processing");
     const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: file?.name.replace(/\.[^/.]+$/, "") || "OCR import", content: ocrResult.trim() }) });
     const data = await response.json().catch(() => null);
-    if (response.ok) router.push(`/notes/${data.note.id}`);
+    if (response.ok) navigateAfterSave(`/notes/${data.note.id}`);
     else { setStatus("failed"); setError(data?.error ?? "Couldn't save the extracted text."); }
   }
 
@@ -138,7 +145,7 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -180,7 +187,7 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -224,7 +231,7 @@ export default function ImportNotePage() {
         setStatus("failed");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setError("We couldn't reach the server.");
       setStatus("failed");

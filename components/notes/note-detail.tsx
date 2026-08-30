@@ -65,6 +65,9 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
     if (res.ok) {
       lastSaved.current = `${title}\u0000${content}`;
       setSaved(true);
+      // Clear the client router cache so the Memories list and dashboard
+      // immediately receive the updated title and timestamp on navigation.
+      router.refresh();
       setTimeout(() => setSaved(false), 2000);
     }
   }

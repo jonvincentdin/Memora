@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { findNoteById, updateNote } from "@/lib/notes-repo";
 import { withApiErrorHandling, type RouteContext } from "@/lib/api/handler";
 import { createResourceRevision } from "@/lib/revisions";
+import { revalidatePath } from "next/cache";
 
 export const GET = withApiErrorHandling(async (_request: Request, context: RouteContext<{ id: string }>) => {
   const params = await context.params;
@@ -40,6 +41,11 @@ export const PATCH = withApiErrorHandling(async (request: Request, context: Rout
   await createResourceRevision({ ownerId: current.ownerId, resourceType: "NOTE", resourceId: current.id, snapshot: { title: current.title, description: current.description ?? null, content: current.content }, autosave: request.headers.get("x-memora-autosave") === "1" });
   const note = await updateNote(params.id, parsed.data);
 
+  revalidatePath("/notes");
+  revalidatePath(`/notes/${params.id}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
+
   return NextResponse.json({ note });
 });
 
@@ -53,6 +59,10 @@ export const DELETE = withApiErrorHandling(async (_request: Request, context: Ro
 
   await deleteSharesForResource("NOTE", params.id);
   await prisma.note.delete({ where: { id: params.id } });
+
+  revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
 
   return NextResponse.json({ success: true });
 });
