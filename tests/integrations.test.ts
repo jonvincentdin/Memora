@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { decryptToken, encryptToken } from "@/lib/integrations/crypto";
 import { createOAuthState, verifyOAuthState } from "@/lib/integrations/oauth-state";
+import { isProviderConfigured } from "@/lib/integrations/config";
 
 describe("integration credentials", () => {
   beforeEach(() => {
@@ -21,5 +22,25 @@ describe("integration credentials", () => {
     expect(verifyOAuthState(state, "user-2", "google")).toBe(false);
     expect(verifyOAuthState(state, "user-1", "notion")).toBe(false);
     expect(verifyOAuthState(`${state}changed`, "user-1", "google")).toBe(false);
+  });
+
+  it("accepts valid provider credentials", () => {
+    process.env.GOOGLE_CLIENT_ID = "123456789-abc123xyz.apps.googleusercontent.com";
+    process.env.GOOGLE_CLIENT_SECRET = "GOCSPX-valid-test-secret";
+    process.env.NOTION_CLIENT_ID = "463558a3-725e-4f37-b6d3-0889894f68de";
+    process.env.NOTION_CLIENT_SECRET = "notion-valid-test-secret";
+
+    expect(isProviderConfigured("google")).toBe(true);
+    expect(isProviderConfigured("notion")).toBe(true);
+  });
+
+  it("rejects callback URLs and placeholders used as OAuth credentials", () => {
+    process.env.GOOGLE_CLIENT_ID = "https://memoria-studynotes.vercel.app/api/integrations/google/callback";
+    process.env.GOOGLE_CLIENT_SECRET = "your_google_client_secret";
+    process.env.NOTION_CLIENT_ID = "https://memoria-studynotes.vercel.app/api/integrations/notion/callback";
+    process.env.NOTION_CLIENT_SECRET = "your_notion_client_secret";
+
+    expect(isProviderConfigured("google")).toBe(false);
+    expect(isProviderConfigured("notion")).toBe(false);
   });
 });
