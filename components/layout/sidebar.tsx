@@ -35,6 +35,7 @@ export function Sidebar({ mode, initialCollapsed }: { mode: SidebarMode; initial
   async function toggleCollapsed() {
     const next = !collapsed;
     setCollapsed(next);
+    window.dispatchEvent(new CustomEvent("memoria:sidebar-state", { detail: { collapsed: next } }));
     await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -67,9 +68,9 @@ export function Sidebar({ mode, initialCollapsed }: { mode: SidebarMode; initial
         !hoverMode && (collapsed ? "w-16" : "w-60")
       )}>
         <div className={cn("flex h-16 shrink-0 items-center border-b border-line/60 px-3", labelsHidden ? "justify-center" : "justify-start", hoverMode && "min-w-60")}>
-          <div className="flex items-center gap-2 overflow-hidden font-display text-lg text-ink">
+          <div className={cn("flex items-center gap-2 overflow-hidden font-display text-lg text-ink", (labelsHidden || hoverMode) && "invisible")}>
             <BookMarked className="h-5 w-5 shrink-0 text-accent-dark" />
-            <span className={cn("whitespace-nowrap transition-opacity", labelsHidden && "sr-only", hoverMode && "opacity-0 group-hover/sidebar:opacity-100")}>Memoria</span>
+            <span className={cn("whitespace-nowrap transition-opacity", hoverMode && "opacity-0 group-hover/sidebar:opacity-100")}>Memoria</span>
           </div>
         </div>
         {!hoverMode && <button type="button" onClick={() => void toggleCollapsed()} aria-label={collapsed ? "Open sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} className="absolute -right-4 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-surface text-ink-soft shadow-card hover:border-accent hover:bg-accent-soft hover:text-ink">{collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}</button>}

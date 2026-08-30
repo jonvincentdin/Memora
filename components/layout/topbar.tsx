@@ -3,16 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, ArrowLeft, Flame } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, ArrowLeft, Flame, BookMarked } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationMenu } from "@/components/notifications/notification-menu";
 import { TagList } from "@/components/library/tag-list";
 
-export function Topbar({ userName, unreadNotifications, studyStreak }: { userName: string; unreadNotifications: number; studyStreak: number }) {
+export function Topbar({ userName, unreadNotifications, studyStreak, showBrandInitially }: { userName: string; unreadNotifications: number; studyStreak: number; showBrandInitially: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showBrand, setShowBrand] = useState(showBrandInitially);
   const [signingOut, setSigningOut] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -26,6 +27,18 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
     ...results.reviewers.map((item) => ({ ...item, type: "reviewer" as const, href: `/reviewers/${item.id}` })),
     ...results.quizzes.map((item) => ({ ...item, type: "quiz" as const, href: `/quizzes/${item.id}` })),
   ].slice(0, 10), [results]);
+
+  useEffect(() => {
+    setShowBrand(showBrandInitially);
+  }, [showBrandInitially]);
+
+  useEffect(() => {
+    function syncSidebarState(event: Event) {
+      setShowBrand((event as CustomEvent<{ collapsed: boolean }>).detail.collapsed);
+    }
+    window.addEventListener("memoria:sidebar-state", syncSidebarState);
+    return () => window.removeEventListener("memoria:sidebar-state", syncSidebarState);
+  }, []);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -80,6 +93,7 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-paper/90 px-4 backdrop-blur sm:px-6">
+      {showBrand && <Link href="/dashboard" aria-label="Memoria dashboard" className="hidden shrink-0 items-center gap-2 font-display text-lg text-ink sm:inline-flex"><BookMarked className="h-5 w-5 text-accent-dark" /><span>Memoria</span></Link>}
       <button
         type="button"
         onClick={() => window.history.length > 1 ? router.back() : router.push("/dashboard")}
