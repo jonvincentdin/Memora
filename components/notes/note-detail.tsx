@@ -88,9 +88,9 @@ export function NoteDetail({ note, canEdit, isOwner, autoSave }: NoteDetailProps
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Badge tone="neutral">{note.sourceType}</Badge>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "md", label: "Markdown" }, { value: "json", label: "Memoria JSON" }]} onExport={handleExport} />
-          <Button variant="secondary" size="sm" onClick={() => router.push(`/reviewers?fromNote=${note.id}`)}>
+          <Button variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => router.push(`/reviewers?fromNote=${note.id}`)}>
             <Sparkles className="h-3.5 w-3.5" /> Build reviewer
           </Button>
           {isOwner && <ShareDialog resourceType="NOTE" resourceId={note.id} />}
