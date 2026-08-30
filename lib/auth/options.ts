@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { isRateLimited } from "@/lib/rate-limit";
 import { randomUUID } from "crypto";
+import { isSessionExpired, REMEMBERED_SESSION_MAX_AGE_SECONDS, sessionExpiresAt } from "@/lib/auth/session-duration";
 
 // A precomputed dummy hash so a login attempt against a nonexistent email
 // still runs bcrypt.compare — otherwise "no such user" responds measurably
@@ -26,6 +27,10 @@ const SESSION_RECOVERY_WINDOW_MS = 2 * 60 * 1000;
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+    maxAge: REMEMBERED_SESSION_MAX_AGE_SECONDS,
+  },
+  jwt: {
+    maxAge: REMEMBERED_SESSION_MAX_AGE_SECONDS,
   },
   pages: {
     signIn: "/login",
@@ -36,6 +41,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        keepLoggedIn: { label: "Keep me logged in", type: "checkbox" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -73,6 +79,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           image: user.image ?? undefined,
           onboardingCompletedAt: user.onboardingCompletedAt,
+          keepLoggedIn: credentials.keepLoggedIn === "true",
         };
       },
     }),
@@ -86,6 +93,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.keepLoggedIn = Boolean(user.keepLoggedIn);
+        token.sessionExpiresAt = sessionExpiresAt(token.keepLoggedIn);
+        token.invalidated = false;
         const cutoff = new Date(Date.now() - SESSION_RECOVERY_WINDOW_MS);
         await prisma.activeSession.deleteMany({ where: { OR: [{ lastSeenAt: { lt: cutoff } }, { userId: user.id, id: token.sessionId ?? "" }] } });
         const existing = await prisma.activeSession.count({ where: { userId: user.id, lastSeenAt: { gte: cutoff } } });
@@ -96,6 +106,9 @@ export const authOptions: NextAuthOptions = {
         token.sessionConflict = existing > 0;
         token.lastSessionCheck = Date.now();
         await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id } });
+      } else if (isSessionExpired(token.sessionExpiresAt)) {
+        if (token.sessionId) await prisma.activeSession.deleteMany({ where: { id: token.sessionId } });
+        token.invalidated = true;
       } else if (token.sessionId && (!token.lastSessionCheck || Date.now() - token.lastSessionCheck > 30_000)) {
         const active = await prisma.activeSession.findUnique({ where: { id: token.sessionId }, select: { id: true } });
         token.invalidated = !active;

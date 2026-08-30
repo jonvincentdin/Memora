@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
+import { TagList } from "@/components/library/tag-list";
 
 const sourceLabels: Record<string, string> = {
   PDF: "PDF",
@@ -59,6 +60,7 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
               <p className="mt-1 text-sm text-ink-soft line-clamp-2">
                 {note.description || note.originalFilename || "Open this note to view the lesson."}
               </p>
+              <TagList tags={note.tags.map(({ tag }) => tag)} />
             </Link>
           ))}
         </div>

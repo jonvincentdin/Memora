@@ -3,6 +3,7 @@ import "next-auth";
 declare module "next-auth" {
   interface User {
     onboardingCompletedAt?: Date | null;
+    keepLoggedIn?: boolean;
   }
 
   interface Session {
@@ -24,5 +25,7 @@ declare module "next-auth/jwt" {
     sessionConflict?: boolean;
     invalidated?: boolean;
     lastSessionCheck?: number;
+    keepLoggedIn?: boolean;
+    sessionExpiresAt?: number;
   }
 }
