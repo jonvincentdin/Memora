@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, Bell } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { NotificationMenu } from "@/components/notifications/notification-menu";
 
 export function Topbar({ userName, unreadNotifications }: { userName: string; unreadNotifications: number }) {
   const router = useRouter();
@@ -123,10 +124,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
           <span className="hidden sm:inline">Create</span>
         </Link>
 
-        <Link href="/notifications" aria-label={`${unreadNotifications} unread notifications`} className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${unreadNotifications > 0 ? "border-danger/40 bg-danger/10 text-danger" : "border-line bg-surface text-ink-soft hover:text-ink"}`}>
-          <Bell className="h-4 w-4" />
-          {unreadNotifications > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-danger" />}
-        </Link>
+        <NotificationMenu initialUnreadCount={unreadNotifications} />
 
         <div className="relative">
           <button
