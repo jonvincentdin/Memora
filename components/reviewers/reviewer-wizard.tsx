@@ -30,11 +30,11 @@ interface Note {
   title: string;
 }
 
-export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean }) {
+export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false, initialPath }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean; initialPath?: "notes" | "import" }) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultNoteId) || initiallyOpen);
-  const [creationPath, setCreationPath] = useState<"notes" | "import" | null>(defaultNoteId ? "notes" : null);
-  const [step, setStep] = useState(1);
+  const [creationPath, setCreationPath] = useState<"notes" | "import" | null>(initialPath ?? (defaultNoteId ? "notes" : null));
+  const [step, setStep] = useState(initialPath === "import" ? 4 : 1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [style, setStyle] = useState<(typeof STYLES)[number]["value"]>("COMPLETE");
   const [processingStyle, setProcessingStyle] = useState<(typeof PROCESSING_STYLES)[number]["value"]>("balanced");

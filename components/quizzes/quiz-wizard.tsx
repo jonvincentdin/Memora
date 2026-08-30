@@ -31,10 +31,11 @@ interface Source {
   title: string;
 }
 
-export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId, defaults, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultNoteId?: string; defaultReviewerId?: string; defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: (typeof MODES)[number]["value"] }; initiallyOpen?: boolean }) {
+export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId, defaults, initiallyOpen = false, initialMode = "existing" }: { notes: Source[]; reviewers: Source[]; defaultNoteId?: string; defaultReviewerId?: string; defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: (typeof MODES)[number]["value"] }; initiallyOpen?: boolean; initialMode?: "existing" | "import" }) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultNoteId || defaultReviewerId) || initiallyOpen);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialMode === "import" ? 4 : 1);
+  const [directImport, setDirectImport] = useState(initialMode === "import");
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>(defaultReviewerId ? [defaultReviewerId] : []);
   const [mode, setMode] = useState<(typeof MODES)[number]["value"]>(defaults.mode);
@@ -119,10 +120,10 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
     }
   }
 
-  function handleValidate() {
+  function validateQuizJson(raw: string) {
     setError(null);
     try {
-      const parsed = parseAiJson(pastedJson);
+      const parsed = parseAiJson(raw);
       const result = validateStructuredQuiz(parsed);
       if (result.success) {
         setValidation({ valid: true, data: result.data });
@@ -132,6 +133,21 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
       }
     } catch (err) {
       setValidation({ valid: false, errors: [err instanceof Error ? err.message : "That's not valid JSON."] });
+    }
+  }
+
+  function handleValidate() {
+    validateQuizJson(pastedJson);
+  }
+
+  async function importQuizFile(file: File) {
+    setError(null);
+    try {
+      const raw = await file.text();
+      setPastedJson(raw);
+      validateQuizJson(raw);
+    } catch {
+      setError("This quiz file couldn't be read.");
     }
   }
 
@@ -227,7 +243,7 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
             </div>
           )}
           <div className="mt-5 flex justify-end">
-            <Button disabled={totalSelected === 0} onClick={() => setStep(2)}>Next</Button>
+            <Button disabled={totalSelected === 0} onClick={() => { setDirectImport(false); setStep(2); }}>Next</Button>
           </div>
         </div>
       )}
@@ -311,6 +327,10 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
 
       {step === 4 && (
         <div>
+          <label className="mb-4 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line bg-surface p-5 text-sm font-medium text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft">
+            <UploadCloud className="h-4 w-4" /> Import a Memoria quiz JSON file
+            <input type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importQuizFile(file); }} />
+          </label>
           <Label htmlFor="quizjson">Paste the AI&apos;s JSON response</Label>
           <Textarea
             id="quizjson"
@@ -353,7 +373,7 @@ export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId,
           {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
           <div className="mt-5 flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+            <Button variant="ghost" onClick={() => { if (directImport) setDirectImport(false); setStep(directImport ? 1 : 3); }}>Back</Button>
             <Button onClick={handleSave} disabled={!validation?.valid} loading={loading}>Save quiz</Button>
           </div>
         </div>
