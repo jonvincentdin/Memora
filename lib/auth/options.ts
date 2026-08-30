@@ -10,6 +10,11 @@ import { randomUUID } from "crypto";
 // faster than "wrong password", which leaks which emails are registered.
 const DUMMY_HASH = "$2a$12$CwTycUXWue0Thq9StjUM0uJ8mVvNfeaVfoi9AKn1BX/EeJXP4wxwG";
 
+// Browser tabs cannot reliably notify the server when they are closed. Keep a
+// short recovery window so an immediately repeated login can recover an
+// interrupted session without treating old, abandoned rows as active users.
+const SESSION_RECOVERY_WINDOW_MS = 2 * 60 * 1000;
+
 /**
  * Central NextAuth configuration.
  *
@@ -81,14 +86,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const cutoff = new Date(Date.now() - SESSION_RECOVERY_WINDOW_MS);
         await prisma.activeSession.deleteMany({ where: { OR: [{ lastSeenAt: { lt: cutoff } }, { userId: user.id, id: token.sessionId ?? "" }] } });
         const existing = await prisma.activeSession.count({ where: { userId: user.id, lastSeenAt: { gte: cutoff } } });
         token.sessionId = randomUUID();
-        // A newly registered account can trigger more than one auth callback
-        // while it moves through onboarding. Never treat that first session as
-        // a conflict; conflict handling starts with subsequent logins.
-        token.sessionConflict = Boolean(user.onboardingCompletedAt) && existing > 0;
+        // A normal first login has no prior session and proceeds silently. Only
+        // a session seen during the short recovery window triggers the prompt,
+        // which covers a recently closed tab without reviving stale sessions.
+        token.sessionConflict = existing > 0;
         token.lastSessionCheck = Date.now();
         await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id } });
       } else if (token.sessionId && (!token.lastSessionCheck || Date.now() - token.lastSessionCheck > 30_000)) {

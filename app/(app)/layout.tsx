@@ -5,6 +5,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { SessionConflictModal } from "@/components/auth/session-conflict-modal";
+import { SessionHeartbeat } from "@/components/auth/session-heartbeat";
 
 // This layout wraps every authenticated route (dashboard, notes, reviewers,
 // quizzes, study, shared, settings — see the route groups that reuse it via
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
       <MobileNav />
+      <SessionHeartbeat />
       {user.sessionConflict && user.sessionId && <SessionConflictModal userName={user.name ?? user.email ?? "This account"} sessionId={user.sessionId} />}
     </div>
   );
