@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withApiErrorHandling } from "@/lib/api/handler";
 import { requireUserOrNull } from "@/lib/auth/session";
-import { issueAccountToken } from "@/lib/auth/account-tokens";
+import { issueAccountCode } from "@/lib/auth/account-tokens";
 import { prisma } from "@/lib/db";
-import { appUrl, emailDeliveryConfigured, sendTransactionalEmail } from "@/lib/email";
+import { emailDeliveryConfigured, sendTransactionalEmail } from "@/lib/email";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -48,13 +48,12 @@ export const PATCH = withApiErrorHandling(async (request: Request) => {
   });
 
   if (requiresVerification) {
-    const { token } = await issueAccountToken(user.id, "EMAIL_VERIFICATION", 24 * 60);
-    const verifyUrl = appUrl(`/verify-email?token=${encodeURIComponent(token)}`);
+    const { code } = await issueAccountCode(user.id, "EMAIL_VERIFICATION", 10);
     await sendTransactionalEmail({
       to: updated.email,
-      subject: "Verify your new Memoria email",
-      text: `Verify your email: ${verifyUrl}`,
-      html: `<p><a href="${verifyUrl}">Verify your new Memoria email</a>. This link expires in 24 hours.</p>`,
+      subject: `${code} is your Memoria verification code`,
+      text: `Your Memoria verification code is ${code}.\n\nThis code expires in 10 minutes.`,
+      html: `<p>Your Memoria verification code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:8px">${code}</p><p>This code expires in 10 minutes.</p>`,
     });
   }
   return NextResponse.json({ user: updated, requiresVerification });

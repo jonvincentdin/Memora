@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { isRateLimited } from "@/lib/rate-limit";
 import { randomUUID } from "crypto";
 import { isSessionExpired, REMEMBERED_SESSION_MAX_AGE_SECONDS, sessionExpiresAt } from "@/lib/auth/session-duration";
+import { describeUserAgent } from "@/lib/auth/user-agent";
 
 // A precomputed dummy hash so a login attempt against a nonexistent email
 // still runs bcrypt.compare — otherwise "no such user" responds measurably
@@ -43,7 +44,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
         keepLoggedIn: { label: "Keep me logged in", type: "checkbox" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -80,6 +81,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image ?? undefined,
           onboardingCompletedAt: user.onboardingCompletedAt,
           keepLoggedIn: credentials.keepLoggedIn === "true",
+          userAgent: request.headers?.["user-agent"],
         };
       },
     }),
@@ -98,14 +100,20 @@ export const authOptions: NextAuthOptions = {
         token.invalidated = false;
         const cutoff = new Date(Date.now() - SESSION_RECOVERY_WINDOW_MS);
         await prisma.activeSession.deleteMany({ where: { OR: [{ lastSeenAt: { lt: cutoff } }, { userId: user.id, id: token.sessionId ?? "" }] } });
-        const existing = await prisma.activeSession.count({ where: { userId: user.id, lastSeenAt: { gte: cutoff } } });
+        const existing = await prisma.activeSession.findFirst({
+          where: { userId: user.id, lastSeenAt: { gte: cutoff } },
+          orderBy: { lastSeenAt: "desc" },
+          select: { userAgent: true },
+        });
         token.sessionId = randomUUID();
         // A normal first login has no prior session and proceeds silently. Only
         // a session seen during the short recovery window triggers the prompt,
         // which covers a recently closed tab without reviving stale sessions.
-        token.sessionConflict = existing > 0;
+        token.sessionConflict = Boolean(existing);
+        token.sessionConflictDevice = existing ? describeUserAgent(existing.userAgent) : undefined;
+        token.currentSessionDevice = describeUserAgent(user.userAgent);
         token.lastSessionCheck = Date.now();
-        await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id } });
+        await prisma.activeSession.create({ data: { id: token.sessionId, userId: user.id, userAgent: user.userAgent } });
       } else if (isSessionExpired(token.sessionExpiresAt)) {
         if (token.sessionId) await prisma.activeSession.deleteMany({ where: { id: token.sessionId } });
         token.invalidated = true;
@@ -126,6 +134,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.sessionId = token.sessionId;
         session.user.sessionConflict = token.sessionConflict;
+        session.user.sessionConflictDevice = token.sessionConflictDevice;
+        session.user.currentSessionDevice = token.currentSessionDevice;
       }
       return session;
     },

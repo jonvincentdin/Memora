@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <MobileNav />
       <SessionHeartbeat />
-      {user.sessionConflict && user.sessionId && <SessionConflictModal userName={user.name ?? user.email ?? "This account"} sessionId={user.sessionId} />}
+      {user.sessionConflict && user.sessionId && <SessionConflictModal userName={user.name ?? user.email ?? "This account"} sessionId={user.sessionId} otherDevice={user.sessionConflictDevice} currentDevice={user.currentSessionDevice} />}
     </div>
   );
 }
