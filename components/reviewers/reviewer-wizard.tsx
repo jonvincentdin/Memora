@@ -188,6 +188,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
 
       {creationPath === "notes" && step === 1 && (
         <div>
+          <p className="mb-4 text-sm text-ink-soft">Choose from the Memories already in your library. You do not need to upload the same material again.</p>
           {notes.length === 0 ? (
             <p className="text-sm text-ink-soft">You don&apos;t have any memories yet. Import a memory first.</p>
           ) : (

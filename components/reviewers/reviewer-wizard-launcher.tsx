@@ -10,8 +10,8 @@ const ReviewerWizard = dynamic(
   { loading: () => <Button loading>Loading creator</Button> }
 );
 
-export function ReviewerWizardLauncher({ notes, defaultNoteId }: { notes: Array<{ id: string; title: string }>; defaultNoteId?: string }) {
-  const [requested, setRequested] = useState(Boolean(defaultNoteId));
+export function ReviewerWizardLauncher({ notes, defaultNoteId, initiallyOpen = false }: { notes: Array<{ id: string; title: string }>; defaultNoteId?: string; initiallyOpen?: boolean }) {
+  const [requested, setRequested] = useState(Boolean(defaultNoteId) || initiallyOpen);
 
   if (!requested) {
     return <Button onClick={() => setRequested(true)}><Plus className="h-4 w-4" /> Create reviewer</Button>;

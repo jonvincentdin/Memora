@@ -8,7 +8,7 @@ import { ReviewerWizardLauncher } from "@/components/reviewers/reviewer-wizard-l
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
 
-export default async function ReviewersPage(props: { searchParams: Promise<{ fromNote?: string; page?: string }> }) {
+export default async function ReviewersPage(props: { searchParams: Promise<{ create?: string; fromNote?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
   const page = Math.max(1, Number(searchParams.page) || 1);
@@ -24,7 +24,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
           <h1 className="font-display text-2xl text-ink">Reviewers</h1>
           <p className="mt-1 text-sm text-ink-soft">Structured study material built from your memories.</p>
         </div>
-        <ReviewerWizardLauncher notes={notes} defaultNoteId={searchParams.fromNote} />
+        <ReviewerWizardLauncher notes={notes} defaultNoteId={searchParams.fromNote} initiallyOpen={searchParams.create === "1"} />
       </div>
       <LibraryNavigation basePath="/reviewers" page={page} hasNext={reviewers.length === 24} />
 
@@ -33,8 +33,8 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ fro
           icon={Layers}
           title="Turn your memories into your first reviewer."
           description="Select memories above and generate a structured reviewer."
-          actionLabel="Import a memory first"
-          actionHref="/notes/import"
+          actionLabel={notes.length > 0 ? "Choose from existing memories" : "Import a memory first"}
+          actionHref={notes.length > 0 ? "/reviewers?create=1" : "/notes/import"}
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
