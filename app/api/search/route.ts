@@ -15,9 +15,9 @@ export const GET = withApiErrorHandling(async (request: Request) => {
 
   if (!q) {
     const [notes, reviewers, quizzes] = await Promise.all([
-      prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
-      prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
-      prisma.quiz.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
+      prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
+      prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
+      prisma.quiz.findMany({ where: { ownerId: user.id, archivedAt: null }, select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 4 }),
     ]);
     return NextResponse.json({ notes, reviewers, quizzes, recommended: true });
   }
@@ -25,19 +25,19 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   const [notes, reviewers, quizzes] = await Promise.all([
     prisma.note.findMany({
       where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { originalFilename: { contains: q, mode: "insensitive" } }, { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } }] },
-      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } },
+      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } },
       orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
       take: 5,
     }),
     prisma.reviewer.findMany({
       where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } }] },
-      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } },
+      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } },
       orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
       take: 5,
     }),
     prisma.quiz.findMany({
       where: { ownerId: user.id, archivedAt: null, OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }, { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } }] },
-      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } },
+      select: { id: true, title: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true, color: true } } } } },
       orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
       take: 5,
     }),

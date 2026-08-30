@@ -17,9 +17,13 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-3xl">
       <h1 className="font-display text-2xl text-ink">Settings</h1>
-      <p className="mt-1 text-sm text-ink-soft">Account: {user.email}</p>
+      <p className="mt-1 text-sm text-ink-soft">Manage preferences, connected services, and account security for {user.email}.</p>
+
+      <nav aria-label="Settings sections" className="mt-5 flex flex-wrap gap-2">
+        {[['Preferences', '#appearance'], ['Navigation', '#navigation'], ['Quiz defaults', '#quiz-defaults'], ['Connections', '#connections'], ['AI', '#ai-providers'], ['Account', '#account']].map(([label, href]) => <a key={href} href={href} className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-accent hover:text-ink">{label}</a>)}
+      </nav>
 
       <div className="mt-8">
         <SettingsForm
@@ -30,6 +34,10 @@ export default async function SettingsPage() {
             defaultQuizMode: settings.defaultQuizMode,
             showExplanations: settings.showExplanations,
             autoSave: settings.autoSave,
+            sidebarMode: settings.sidebarMode === "HOVER" ? "HOVER" : "MANUAL",
+            sidebarCollapsed: settings.sidebarCollapsed,
+            compactLayout: settings.compactLayout,
+            reduceMotion: settings.reduceMotion,
           }}
         />
       </div>

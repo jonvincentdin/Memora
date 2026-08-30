@@ -11,6 +11,10 @@ const updateSettingsSchema = z.object({
   defaultQuizMode: z.enum(["QUIZ", "PRACTICE_EXAM", "MOCK_EXAM", "TIMED_EXAM", "MASTERY_TEST"]).optional(),
   showExplanations: z.boolean().optional(),
   autoSave: z.boolean().optional(),
+  sidebarMode: z.enum(["HOVER", "MANUAL"]).optional(),
+  sidebarCollapsed: z.boolean().optional(),
+  compactLayout: z.boolean().optional(),
+  reduceMotion: z.boolean().optional(),
 });
 
 export const GET = withApiErrorHandling(async () => {

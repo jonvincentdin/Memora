@@ -126,6 +126,10 @@ model UserSettings {
   defaultQuizMode      QuizMode   @default(QUIZ)
   showExplanations     Boolean    @default(true)
   autoSave             Boolean    @default(true)
+  sidebarMode          String     @default("MANUAL")
+  sidebarCollapsed     Boolean    @default(false)
+  compactLayout        Boolean    @default(false)
+  reduceMotion         Boolean    @default(false)
   updatedAt            DateTime   @updatedAt
 
   @@map("user_settings")

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, Flame } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, ArrowLeft, Flame } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationMenu } from "@/components/notifications/notification-menu";
@@ -71,6 +71,15 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-paper/90 px-4 backdrop-blur sm:px-6">
+      <button
+        type="button"
+        onClick={() => window.history.length > 1 ? router.back() : router.push("/dashboard")}
+        aria-label="Go to previous page"
+        title="Previous page"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-soft hover:border-accent hover:text-ink"
+      >
+        <ArrowLeft className="h-4 w-4" />
+      </button>
       <form ref={searchRef} onSubmit={handleSearch} className="relative min-w-0 flex-1" role="search">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
         <input
@@ -171,6 +180,6 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   );
 }
 
-interface SearchItem { id: string; title: string; isFavorite?: boolean; tags: Array<{ tag: { id: string; name: string } }> }
+interface SearchItem { id: string; title: string; isFavorite?: boolean; tags: Array<{ tag: { id: string; name: string; color: string | null } }> }
 interface SearchResponse { notes: SearchItem[]; reviewers: SearchItem[]; quizzes: SearchItem[] }
 interface SearchSuggestion extends SearchItem { type: "note" | "reviewer" | "quiz"; href: string }

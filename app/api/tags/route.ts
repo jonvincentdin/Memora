@@ -6,7 +6,9 @@ import { prisma } from "@/lib/db";
 import { isOwner } from "@/lib/permissions";
 
 const typeSchema = z.enum(["NOTE", "REVIEWER", "QUIZ"]);
-const createSchema = z.object({ resourceType: typeSchema, resourceId: z.string(), name: z.string().trim().min(1).max(40) });
+const colorSchema = z.string().regex(/^#[0-9a-f]{6}$/i, "Choose a valid tag color.");
+const createSchema = z.object({ resourceType: typeSchema, resourceId: z.string(), name: z.string().trim().min(1).max(40), color: colorSchema.optional() });
+const updateSchema = z.object({ tagId: z.string(), color: colorSchema });
 
 export const GET = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
@@ -27,11 +29,22 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid tag." }, { status: 400 });
   if (!(await isOwner(user.id, parsed.data.resourceType, parsed.data.resourceId))) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  const tag = await prisma.tag.upsert({ where: { ownerId_name: { ownerId: user.id, name: parsed.data.name } }, create: { ownerId: user.id, name: parsed.data.name }, update: {} });
+  const tag = await prisma.tag.upsert({ where: { ownerId_name: { ownerId: user.id, name: parsed.data.name } }, create: { ownerId: user.id, name: parsed.data.name, color: parsed.data.color }, update: {} });
   if (parsed.data.resourceType === "NOTE") await prisma.noteTag.upsert({ where: { noteId_tagId: { noteId: parsed.data.resourceId, tagId: tag.id } }, create: { noteId: parsed.data.resourceId, tagId: tag.id }, update: {} });
   else if (parsed.data.resourceType === "REVIEWER") await prisma.reviewerTag.upsert({ where: { reviewerId_tagId: { reviewerId: parsed.data.resourceId, tagId: tag.id } }, create: { reviewerId: parsed.data.resourceId, tagId: tag.id }, update: {} });
   else await prisma.quizTag.upsert({ where: { quizId_tagId: { quizId: parsed.data.resourceId, tagId: tag.id } }, create: { quizId: parsed.data.resourceId, tagId: tag.id }, update: {} });
   return NextResponse.json({ tag }, { status: 201 });
+});
+
+export const PATCH = withApiErrorHandling(async (request: Request) => {
+  const user = await requireUserOrNull();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const parsed = updateSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid tag color." }, { status: 400 });
+  const updated = await prisma.tag.updateMany({ where: { id: parsed.data.tagId, ownerId: user.id }, data: { color: parsed.data.color } });
+  if (updated.count === 0) return NextResponse.json({ error: "Tag not found." }, { status: 404 });
+  const tag = await prisma.tag.findUnique({ where: { id: parsed.data.tagId } });
+  return NextResponse.json({ tag });
 });
 
 export const DELETE = withApiErrorHandling(async (request: Request) => {

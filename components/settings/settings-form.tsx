@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/layout/theme-provider";
+import { useRouter } from "next/navigation";
 
 interface Settings {
   appearance: "LIGHT" | "DARK" | "SYSTEM";
@@ -12,6 +13,10 @@ interface Settings {
   defaultQuizMode: "QUIZ" | "PRACTICE_EXAM" | "MOCK_EXAM" | "TIMED_EXAM" | "MASTERY_TEST";
   showExplanations: boolean;
   autoSave: boolean;
+  sidebarMode: "HOVER" | "MANUAL";
+  sidebarCollapsed: boolean;
+  compactLayout: boolean;
+  reduceMotion: boolean;
 }
 
 export function SettingsForm({ initial }: { initial: Settings }) {
@@ -20,6 +25,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
   const [saved, setSaved] = useState(false);
   const lastSavedQuestionCount = useRef(initial.defaultQuestionCount);
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
   // The account's stored appearance is the source of truth the first time a
   // signed-in user visits Settings on a given browser (e.g. a fresh device
@@ -46,6 +52,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
       });
       if (!res.ok) throw new Error("save failed");
       if (patch.defaultQuestionCount !== undefined) lastSavedQuestionCount.current = patch.defaultQuestionCount;
+      if (patch.sidebarMode !== undefined || patch.sidebarCollapsed !== undefined || patch.compactLayout !== undefined || patch.reduceMotion !== undefined) router.refresh();
     } catch {
       // Appearance already applied locally even if the account sync fails —
       // don't block or roll back the visual change over a flaky save.
@@ -56,9 +63,11 @@ export function SettingsForm({ initial }: { initial: Settings }) {
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Appearance</h2>
+    <div className="space-y-5">
+      <section id="appearance" className="card scroll-mt-24 p-5">
+        <h2 className="font-display text-lg text-ink">Appearance and accessibility</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-soft">Control how Memoria looks and reduce visual movement when needed.</p>
+        <Label>Color theme</Label>
         <div className="flex gap-2">
           {(["LIGHT", "DARK", "SYSTEM"] as const).map((a) => (
             <button
@@ -73,11 +82,27 @@ export function SettingsForm({ initial }: { initial: Settings }) {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-ink-faint">Applies immediately on this device, and syncs to your account.</p>
+        <label className="mt-4 flex items-start gap-3 rounded-lg border border-line p-3 text-sm text-ink">
+          <input className="mt-0.5 h-4 w-4 accent-accent" type="checkbox" checked={settings.reduceMotion} onChange={(e) => save({ reduceMotion: e.target.checked })} />
+          <span><span className="block font-medium">Reduce motion</span><span className="block text-xs text-ink-soft">Minimize animations and transitions throughout the signed-in app.</span></span>
+        </label>
       </section>
 
-      <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Default quiz settings</h2>
+      <section id="navigation" className="card scroll-mt-24 p-5">
+        <h2 className="font-display text-lg text-ink">Navigation and layout</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-soft">Choose how the desktop sidebar opens and how much space pages use.</p>
+        <Label>Desktop sidebar behavior</Label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => save({ sidebarMode: "MANUAL" })} className={cn("rounded-lg border p-3 text-left", settings.sidebarMode === "MANUAL" ? "border-action bg-accent-soft" : "border-line hover:bg-ink/5")}><span className="block text-sm font-medium text-ink">Manual button</span><span className="mt-1 block text-xs text-ink-soft">Use the button in the sidebar to open or collapse it.</span></button>
+          <button type="button" onClick={() => save({ sidebarMode: "HOVER" })} className={cn("rounded-lg border p-3 text-left", settings.sidebarMode === "HOVER" ? "border-action bg-accent-soft" : "border-line hover:bg-ink/5")}><span className="block text-sm font-medium text-ink">Open on hover</span><span className="mt-1 block text-xs text-ink-soft">Move the pointer to the far-left edge to reveal the sidebar.</span></button>
+        </div>
+        {settings.sidebarMode === "MANUAL" && <label className="mt-3 flex items-start gap-3 rounded-lg border border-line p-3 text-sm text-ink"><input className="mt-0.5 h-4 w-4 accent-accent" type="checkbox" checked={settings.sidebarCollapsed} onChange={(e) => save({ sidebarCollapsed: e.target.checked })} /><span><span className="block font-medium">Start with sidebar collapsed</span><span className="block text-xs text-ink-soft">Keep only the navigation icons visible until you open it.</span></span></label>}
+        <label className="mt-3 flex items-start gap-3 rounded-lg border border-line p-3 text-sm text-ink"><input className="mt-0.5 h-4 w-4 accent-accent" type="checkbox" checked={settings.compactLayout} onChange={(e) => save({ compactLayout: e.target.checked })} /><span><span className="block font-medium">Compact page spacing</span><span className="block text-xs text-ink-soft">Fit more content on screen by reducing vertical page padding.</span></span></label>
+      </section>
+
+      <section id="quiz-defaults" className="card scroll-mt-24 p-5">
+        <h2 className="font-display text-lg text-ink">Quiz defaults</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-soft">Pre-fill new quizzes with your usual test configuration.</p>
         <div className="grid max-w-sm gap-4">
           <div>
             <Label htmlFor="qcount">Default question count</Label>
@@ -116,21 +141,22 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Study preferences</h2>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input type="checkbox" checked={settings.showExplanations} onChange={(e) => save({ showExplanations: e.target.checked })} />
-            Show explanations after each question
+      <section id="study-editing" className="card scroll-mt-24 p-5">
+        <h2 className="font-display text-lg text-ink">Study and editing</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-soft">Set feedback and saving behavior for everyday study work.</p>
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 rounded-lg border border-line p-3 text-sm text-ink">
+            <input className="mt-0.5 h-4 w-4 accent-accent" type="checkbox" checked={settings.showExplanations} onChange={(e) => save({ showExplanations: e.target.checked })} />
+            <span><span className="block font-medium">Show answer explanations</span><span className="block text-xs text-ink-soft">Display explanations after checking answers in review mode.</span></span>
           </label>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input type="checkbox" checked={settings.autoSave} onChange={(e) => save({ autoSave: e.target.checked })} />
-            Auto-save notes and reviewers while editing
+          <label className="flex items-start gap-3 rounded-lg border border-line p-3 text-sm text-ink">
+            <input className="mt-0.5 h-4 w-4 accent-accent" type="checkbox" checked={settings.autoSave} onChange={(e) => save({ autoSave: e.target.checked })} />
+            <span><span className="block font-medium">Auto-save edits</span><span className="block text-xs text-ink-soft">Save notes and reviewers while you type to reduce the risk of lost work.</span></span>
           </label>
         </div>
       </section>
 
-      <p className="text-xs text-ink-faint">{saving ? "Saving…" : saved ? "Saved." : ""}</p>
+      <p className="min-h-4 text-xs text-ink-faint" role="status">{saving ? "Saving…" : saved ? "Saved." : ""}</p>
     </div>
   );
 }

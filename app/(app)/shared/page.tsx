@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/utils";
+import { SharedNavigation } from "@/components/sharing/shared-navigation";
 
 const resourceRoutes: Record<string, string> = { NOTE: "/notes", REVIEWER: "/reviewers", QUIZ: "/quizzes" };
 
@@ -33,12 +34,7 @@ export default async function SharedWithMePage() {
       <h1 className="font-display text-2xl text-ink">Shared with me</h1>
       <p className="mt-1 text-sm text-ink-soft">Resources and private collections other Memoria users have shared with you.</p>
 
-      <div className="mt-4 flex gap-1 rounded-lg border border-line bg-surface p-1 w-fit">
-        <span className="rounded-md bg-action px-4 py-1.5 text-sm font-medium text-action-foreground">Shared with me</span>
-        <Link href="/shared/collections" className="rounded-md px-4 py-1.5 text-sm font-medium text-ink-soft hover:bg-ink/5">
-          My collections
-        </Link>
-      </div>
+      <div className="mt-4"><SharedNavigation /></div>
 
       {shares.length === 0 && collectionMemberships.length === 0 ? (
         <div className="mt-6">
