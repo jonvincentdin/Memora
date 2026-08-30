@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, FileText, Layers, ListChecks, TrendingUp } from "lucide-react";
 
 const stack = [
-  { label: "Memories", icon: FileText, rotate: "-rotate-3", tint: "bg-surface" },
+  { label: "Notes", icon: FileText, rotate: "-rotate-3", tint: "bg-surface" },
   { label: "Reviewer", icon: Layers, rotate: "rotate-2", tint: "bg-surface" },
   { label: "Quiz", icon: ListChecks, rotate: "-rotate-1", tint: "bg-surface" },
   { label: "Results", icon: TrendingUp, rotate: "rotate-3", tint: "bg-accent-soft" },
@@ -14,14 +14,14 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="animate-fade-up">
           <p className="mb-5 inline-flex items-center rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium uppercase tracking-wide text-ink-soft">
-            Memories → Reviewers → Quizzes → Progress
+            Notes → Reviewers → Quizzes → Progress
           </p>
           <h1 className="font-display text-[2.75rem] leading-[1.08] tracking-tight text-ink sm:text-6xl">
-            Turn scattered memories into{" "}
+            Turn scattered notes into{" "}
             <span className="highlight-mark animate-highlight-sweep italic">structured knowledge</span>.
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-            Import your memories, organize them into clean reviewers, and test yourself with quizzes and exams
+            Import your notes, organize them into clean reviewers, and test yourself with quizzes and exams
             built from your own material — no AI bolted into the app, just a clean workflow that gets you
             studying faster.
           </p>

@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/utils";
 
 const quickActions = [
-  { href: "/notes/import", label: "Import Memory", icon: FileInput },
+  { href: "/notes/import", label: "Import Note", icon: FileInput },
   { href: "/reviewers", label: "Create Reviewer", icon: Layers },
   { href: "/quizzes", label: "Create Quiz", icon: ListChecks },
   { href: "/study", label: "Start Study Session", icon: PlayCircle },
@@ -16,19 +16,28 @@ const quickActions = [
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  const [recentNotes, recentReviewers, recentQuizzes, recentAttempts, noteCount, quizAttemptCount] = await Promise.all([
-    prisma.note.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
-    prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
-    prisma.quiz.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, take: 4, select: { id: true, title: true, updatedAt: true } }),
+  const [recentNotes, recentReviewers, recentQuizzes, recentAttempts, noteCount, reviewerCount, quizCount, quizAttemptCount] = await Promise.all([
+    prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, title: true, updatedAt: true } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, title: true, updatedAt: true } }),
+    prisma.quiz.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, title: true, updatedAt: true } }),
     prisma.quizAttempt.findMany({
       where: { userId: user.id, completedAt: { not: null } },
       orderBy: { completedAt: "desc" },
       take: 4,
       select: { score: true, totalQuestions: true },
     }),
-    prisma.note.count({ where: { ownerId: user.id } }),
+    prisma.note.count({ where: { ownerId: user.id, archivedAt: null } }),
+    prisma.reviewer.count({ where: { ownerId: user.id, archivedAt: null } }),
+    prisma.quiz.count({ where: { ownerId: user.id, archivedAt: null } }),
     prisma.quizAttempt.count({ where: { userId: user.id, completedAt: { not: null } } }),
   ]);
+
+  const memories = [
+    ...recentNotes.map((item) => ({ ...item, type: "Note", href: `/notes/${item.id}`, icon: FileText })),
+    ...recentReviewers.map((item) => ({ ...item, type: "Reviewer", href: `/reviewers/${item.id}`, icon: Layers })),
+    ...recentQuizzes.map((item) => ({ ...item, type: "Quiz", href: `/quizzes/${item.id}`, icon: ListChecks })),
+  ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 8);
+  const memoryCount = noteCount + reviewerCount + quizCount;
 
   const avgScore =
     recentAttempts.length > 0
@@ -59,11 +68,11 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {noteCount > 0 && (
+      {memoryCount > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <Card className="p-4">
             <p className="text-xs uppercase tracking-wide text-ink-faint">Memories in library</p>
-            <p className="mt-1 font-display text-2xl text-ink">{noteCount}</p>
+            <p className="mt-1 font-display text-2xl text-ink">{memoryCount}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs uppercase tracking-wide text-ink-faint">Assessments completed</p>
@@ -80,67 +89,32 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Recent memories</h2>
-        {recentNotes.length === 0 ? (
+        <div className="mb-3">
+          <h2 className="font-display text-lg text-ink">Memories</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">Your recent notes, reviewers, and quizzes in one place.</p>
+        </div>
+        {memories.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Your study library is empty."
-            description="Import your first memory to get started."
-            actionLabel="Import your first memory"
+            description="Import your first note to get started."
+            actionLabel="Import your first note"
             actionHref="/notes/import"
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {recentNotes.map((note) => (
-              <Link key={note.id} href={`/notes/${note.id}`} className="card p-4 hover:shadow-card-hover">
-                <p className="font-display text-sm text-ink line-clamp-1">{note.title}</p>
-                <p className="mt-1 text-xs text-ink-faint">{formatRelativeTime(note.updatedAt)}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Recent reviewers</h2>
-        {recentReviewers.length === 0 ? (
-          <EmptyState
-            icon={Layers}
-            title="Turn your memories into your first reviewer."
-            description="Select memories and generate a structured reviewer."
-            actionLabel="Create a reviewer"
-            actionHref="/reviewers"
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {recentReviewers.map((r) => (
-              <Link key={r.id} href={`/reviewers/${r.id}`} className="card p-4 hover:shadow-card-hover">
-                <p className="font-display text-sm text-ink line-clamp-1">{r.title}</p>
-                <p className="mt-1 text-xs text-ink-faint">{formatRelativeTime(r.updatedAt)}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-3 font-display text-lg text-ink">Recent quizzes &amp; results</h2>
-        {recentQuizzes.length === 0 ? (
-          <EmptyState
-            icon={ListChecks}
-            title="Create a quiz from your study material."
-            description="Pick memories or reviewers and generate quiz questions."
-            actionLabel="Create a quiz"
-            actionHref="/quizzes"
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {recentQuizzes.map((q) => (
-              <Link key={q.id} href={`/quizzes/${q.id}`} className="card p-4 hover:shadow-card-hover">
-                <p className="font-display text-sm text-ink line-clamp-1">{q.title}</p>
-                <p className="mt-1 text-xs text-ink-faint">{formatRelativeTime(q.updatedAt)}</p>
-              </Link>
-            ))}
+            {memories.map((memory) => {
+              const MemoryIcon = memory.icon;
+              return <Link key={`${memory.type}-${memory.id}`} href={memory.href} className="card p-4 hover:shadow-card-hover">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-1 text-xs font-medium text-accent-dark">
+                      <MemoryIcon className="h-3.5 w-3.5" /> {memory.type}
+                    </span>
+                    <span className="text-xs text-ink-faint">{formatRelativeTime(memory.updatedAt)}</span>
+                  </div>
+                  <p className="font-display text-sm text-ink line-clamp-2">{memory.title}</p>
+                </Link>;
+            })}
           </div>
         )}
       </section>

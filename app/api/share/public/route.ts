@@ -19,8 +19,8 @@ export const GET = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { resourceType, resourceId } = readResource(request);
-  if (resourceType !== "NOTE" || !resourceId) return NextResponse.json({ error: "Public links are currently available for Memories." }, { status: 400 });
-  if (!(await isOwner(user.id, "NOTE", resourceId))) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
+  if (resourceType !== "NOTE" || !resourceId) return NextResponse.json({ error: "Public links are currently available for notes." }, { status: 400 });
+  if (!(await isOwner(user.id, "NOTE", resourceId))) return NextResponse.json({ error: "Note not found." }, { status: 404 });
   const link = await prisma.publicResourceLink.findUnique({ where: { resourceId_resourceType: { resourceId, resourceType: "NOTE" } }, select: { token: true } });
   return NextResponse.json({ url: link ? publicUrl(link.token) : null });
 });
@@ -29,8 +29,8 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const user = await requireUserOrNull();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null);
-  if (body?.resourceType !== "NOTE" || typeof body?.resourceId !== "string") return NextResponse.json({ error: "Public links are currently available for Memories." }, { status: 400 });
-  if (!(await isOwner(user.id, "NOTE", body.resourceId))) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
+  if (body?.resourceType !== "NOTE" || typeof body?.resourceId !== "string") return NextResponse.json({ error: "Public links are currently available for notes." }, { status: 400 });
+  if (!(await isOwner(user.id, "NOTE", body.resourceId))) return NextResponse.json({ error: "Note not found." }, { status: 404 });
 
   const link = await prisma.publicResourceLink.upsert({
     where: { resourceId_resourceType: { resourceId: body.resourceId, resourceType: "NOTE" } },
@@ -46,7 +46,7 @@ export const DELETE = withApiErrorHandling(async (request: Request) => {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null);
   if (body?.resourceType !== "NOTE" || typeof body?.resourceId !== "string") return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  if (!(await isOwner(user.id, "NOTE", body.resourceId))) return NextResponse.json({ error: "Memory not found." }, { status: 404 });
+  if (!(await isOwner(user.id, "NOTE", body.resourceId))) return NextResponse.json({ error: "Note not found." }, { status: 404 });
   await prisma.publicResourceLink.deleteMany({ where: { resourceId: body.resourceId, resourceType: "NOTE", ownerId: user.id } });
   return NextResponse.json({ success: true });
 });

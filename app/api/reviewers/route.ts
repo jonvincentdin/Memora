@@ -31,7 +31,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
 
   for (const noteId of parsed.data.noteIds) {
     const allowed = await canView(user.id, "NOTE", noteId);
-    if (!allowed) return NextResponse.json({ error: "One or more source memories could not be found." }, { status: 404 });
+    if (!allowed) return NextResponse.json({ error: "One or more source notes could not be found." }, { status: 404 });
   }
 
   const reviewer = await createReviewer({

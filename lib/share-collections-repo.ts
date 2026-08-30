@@ -79,7 +79,7 @@ export async function addCollectionItem(
   // Only the owner's own resources can be added — this is what prevents
   // someone from publishing a collection full of other people's private notes.
   const owns = await resourceBelongsTo(ownerId, item.resourceType, item.resourceId);
-  if (!owns) throw new Error("You can only add your own memories, reviewers, or quizzes.");
+  if (!owns) throw new Error("You can only add your own notes, reviewers, or quizzes.");
 
   const position = collection.items.length;
   return prisma.shareCollectionItem.upsert({

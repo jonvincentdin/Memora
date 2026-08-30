@@ -30,11 +30,11 @@ interface Note {
   title: string;
 }
 
-export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean }) {
+export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false, initialPath }: { notes: Note[]; defaultNoteId?: string; initiallyOpen?: boolean; initialPath?: "notes" | "import" }) {
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultNoteId) || initiallyOpen);
-  const [creationPath, setCreationPath] = useState<"notes" | "import" | null>(defaultNoteId ? "notes" : null);
-  const [step, setStep] = useState(1);
+  const [creationPath, setCreationPath] = useState<"notes" | "import" | null>(initialPath ?? (defaultNoteId ? "notes" : null));
+  const [step, setStep] = useState(initialPath === "import" ? 4 : 1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [style, setStyle] = useState<(typeof STYLES)[number]["value"]>("COMPLETE");
   const [processingStyle, setProcessingStyle] = useState<(typeof PROCESSING_STYLES)[number]["value"]>("balanced");
@@ -173,13 +173,13 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
       {!creationPath && <div>
         <p className="mb-4 text-sm text-ink-soft">How would you like to create this reviewer?</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <button onClick={() => { setCreationPath("notes"); setStep(1); }} className="rounded-xl border border-line bg-surface p-5 text-left transition-colors hover:border-accent"><FileText className="mb-3 h-6 w-6 text-accent-dark" /><span className="block font-display text-lg text-ink">From your Memories</span><span className="mt-1 block text-sm text-ink-soft">Select one or more memories and build a structured reviewer.</span></button>
+          <button onClick={() => { setCreationPath("notes"); setStep(1); }} className="rounded-xl border border-line bg-surface p-5 text-left transition-colors hover:border-accent"><FileText className="mb-3 h-6 w-6 text-accent-dark" /><span className="block font-display text-lg text-ink">From your Notes</span><span className="mt-1 block text-sm text-ink-soft">Select one or more notes and build a structured reviewer.</span></button>
           <button onClick={() => { setCreationPath("import"); setStep(4); }} className="rounded-xl border border-line bg-surface p-5 text-left transition-colors hover:border-accent"><Upload className="mb-3 h-6 w-6 text-accent-dark" /><span className="block font-display text-lg text-ink">Import</span><span className="mt-1 block text-sm text-ink-soft">Upload a Memoria export, Markdown, or text reviewer.</span></button>
         </div>
       </div>}
 
       {creationPath && <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
-        {["Select memories", "Choose style", "Generate & copy", "Paste result"].map((label, i) => (
+        {["Select notes", "Choose style", "Generate & copy", "Paste result"].map((label, i) => (
           <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-action text-action-foreground" : "bg-ink/5")}>
             {i + 1}. {label}
           </span>
@@ -188,9 +188,9 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
 
       {creationPath === "notes" && step === 1 && (
         <div>
-          <p className="mb-4 text-sm text-ink-soft">Choose from the Memories already in your library. You do not need to upload the same material again.</p>
+          <p className="mb-4 text-sm text-ink-soft">Choose from the notes already in your library. You do not need to upload the same material again.</p>
           {notes.length === 0 ? (
-            <p className="text-sm text-ink-soft">You don&apos;t have any memories yet. Import a memory first.</p>
+            <p className="text-sm text-ink-soft">You don&apos;t have any notes yet. Import a note first.</p>
           ) : (
             <div className="max-h-64 space-y-1.5 overflow-y-auto">
               {notes.map((note) => (

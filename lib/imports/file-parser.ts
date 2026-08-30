@@ -105,7 +105,7 @@ function parseJsonImport(buffer: Buffer): ExtractedFile {
   }
 
   if (!parsed || typeof parsed !== "object") {
-    throw new FileParseError("This .json file doesn't contain an object or array Memoria can read memories from.");
+    throw new FileParseError("This .json file doesn't contain an object or array Memoria can read notes from.");
   }
 
   const obj = parsed as Record<string, unknown>;

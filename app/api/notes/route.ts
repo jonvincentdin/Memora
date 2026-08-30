@@ -43,7 +43,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const body = await request.json().catch(() => null);
   const parsed = createNoteSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid memory." }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid note." }, { status: 400 });
   }
 
   const note = await createNote({

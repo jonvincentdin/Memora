@@ -8,7 +8,7 @@ import { QuizWizardLauncher } from "@/components/quizzes/quiz-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
 
-export default async function QuizzesPage(props: { searchParams: Promise<{ create?: string; fromNote?: string; fromReviewer?: string; page?: string }> }) {
+export default async function QuizzesPage(props: { searchParams: Promise<{ create?: string; fromNote?: string; fromReviewer?: string; source?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
   const page = Math.max(1, Number(searchParams.page) || 1);
@@ -32,7 +32,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
           <h1 className="font-display text-2xl text-ink">Quizzes</h1>
           <p className="mt-1 text-sm text-ink-soft">Test yourself with questions built from your own material.</p>
         </div>
-        <QuizWizardLauncher notes={notes} reviewers={reviewers} defaultNoteId={searchParams.fromNote} defaultReviewerId={searchParams.fromReviewer} initiallyOpen={searchParams.create === "1"} defaults={{ questionCount: settings.defaultQuestionCount, difficulty: settings.defaultDifficulty, mode: settings.defaultQuizMode }} />
+        <QuizWizardLauncher key={`${searchParams.create}-${searchParams.source}-${searchParams.fromNote}-${searchParams.fromReviewer}`} notes={notes} reviewers={reviewers} defaultNoteId={searchParams.fromNote} defaultReviewerId={searchParams.fromReviewer} initiallyOpen={searchParams.create === "1"} initialMode={searchParams.source === "import" ? "import" : "existing"} defaults={{ questionCount: settings.defaultQuestionCount, difficulty: settings.defaultDifficulty, mode: settings.defaultQuizMode }} />
       </div>
       <LibraryNavigation basePath="/quizzes" page={page} hasNext={quizzes.length === 24} />
 
@@ -40,9 +40,11 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
         <EmptyState
           icon={ListChecks}
           title="Create a quiz from your study material."
-          description="Pick memories or reviewers above and generate quiz questions."
-          actionLabel={notes.length > 0 || reviewers.length > 0 ? "Choose existing study material" : "Import a memory first"}
-          actionHref={notes.length > 0 || reviewers.length > 0 ? "/quizzes?create=1" : "/notes/import"}
+          description="Pick notes or reviewers above and generate quiz questions."
+          actionLabel={notes.length > 0 || reviewers.length > 0 ? "Choose existing study material" : "Import a note first"}
+          actionHref={notes.length > 0 || reviewers.length > 0 ? "/quizzes?create=1&source=existing" : "/notes/import"}
+          secondaryActionLabel="Import quiz"
+          secondaryActionHref="/quizzes?create=1&source=import"
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

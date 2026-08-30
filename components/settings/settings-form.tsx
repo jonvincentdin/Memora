@@ -125,7 +125,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           </label>
           <label className="flex items-center gap-2 text-sm text-ink">
             <input type="checkbox" checked={settings.autoSave} onChange={(e) => save({ autoSave: e.target.checked })} />
-            Auto-save memories and reviewers while editing
+            Auto-save notes and reviewers while editing
           </label>
         </div>
       </section>

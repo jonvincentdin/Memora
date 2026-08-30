@@ -16,6 +16,7 @@ export function QuizWizardLauncher({
   defaultNoteId,
   defaultReviewerId,
   initiallyOpen = false,
+  initialMode = "existing",
   defaults,
 }: {
   notes: Array<{ id: string; title: string }>;
@@ -23,6 +24,7 @@ export function QuizWizardLauncher({
   defaultNoteId?: string;
   defaultReviewerId?: string;
   initiallyOpen?: boolean;
+  initialMode?: "existing" | "import";
   defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: "QUIZ" | "PRACTICE_EXAM" | "MOCK_EXAM" | "TIMED_EXAM" | "MASTERY_TEST" };
 }) {
   const [requested, setRequested] = useState(Boolean(defaultNoteId || defaultReviewerId) || initiallyOpen);
@@ -30,5 +32,5 @@ export function QuizWizardLauncher({
   if (!requested) {
     return <Button onClick={() => setRequested(true)}><Plus className="h-4 w-4" /> Create quiz</Button>;
   }
-  return <QuizWizard notes={notes} reviewers={reviewers} defaultNoteId={defaultNoteId} defaultReviewerId={defaultReviewerId} defaults={defaults} initiallyOpen />;
+  return <QuizWizard notes={notes} reviewers={reviewers} defaultNoteId={defaultNoteId} defaultReviewerId={defaultReviewerId} defaults={defaults} initiallyOpen initialMode={initialMode} />;
 }

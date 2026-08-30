@@ -1,6 +1,6 @@
 # Memoria
 
-A full-stack study platform that turns your Memories into structured reviewers, quizzes, and exams — built with Next.js 15, TypeScript, Prisma, and NextAuth.
+A full-stack study platform that turns your notes into structured reviewers, quizzes, and exams — built with Next.js 15, TypeScript, Prisma, and NextAuth.
 
 Memoria can generate ready-to-use prompts for a manual copy/paste workflow, or users can connect their own OpenAI, Anthropic, or Gemini API key for one-click generation. Provider keys are encrypted at rest and AI output is validated before it is saved.
 
@@ -10,7 +10,7 @@ Memoria can generate ready-to-use prompts for a manual copy/paste workflow, or u
 - **Styling:** Tailwind CSS with a custom design system (`tailwind.config.ts`)
 - **Database:** PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
 - **Auth:** NextAuth.js credentials plus per-user Google Drive and Notion OAuth connections
-- **Content:** Memories and reviewers are Markdown, **gzip-compressed at rest** (see Storage below), rendered with `react-markdown` + `remark-gfm`
+- **Content:** Notes and reviewers are Markdown, **gzip-compressed at rest** (see Storage below), rendered with `react-markdown` + `remark-gfm`
 - **Validation:** Zod schemas shared between client and server (`lib/validation/`)
 - **Document export:** print-first PDF through `jsPDF` plus Word `.docx` through `docx`, using the same A4 layout rules and Memoria branding
 
@@ -27,7 +27,7 @@ Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 Never commit `.env`. If a secret is exposed, removing the file is not enough: rotate the credential and remove it from Git history.
 
-**Do you need to run `prisma migrate dev` every time?** No — only when `prisma/schema.prisma` itself changes (adding/renaming a field, changing a type, etc.). Normal day-to-day use (creating Memories, editing reviewers, taking quizzes) is just regular database reads/writes through Prisma Client and never touches migrations. This particular version of the schema *did* change (the internal `Note`/`Reviewer` content fields moved from `String` to compressed `Bytes`), so if you're upgrading from an earlier copy of this project, run the migration once to apply it — after that you're done until the schema changes again.
+**Do you need to run `prisma migrate dev` every time?** No — only when `prisma/schema.prisma` itself changes (adding/renaming a field, changing a type, etc.). Normal day-to-day use (creating notes, editing reviewers, taking quizzes) is just regular database reads/writes through Prisma Client and never touches migrations. This particular version of the schema *did* change (Note/Reviewer content moved from `String` to compressed `Bytes`), so if you're upgrading from an earlier copy of this project, run the migration once to apply it — after that you're done until the schema changes again.
 
 `npm install` runs `prisma generate` automatically (via `postinstall`). If you're behind a restrictive network/proxy and it fails to fetch Prisma's query-engine binary, run `npx prisma generate` again once you have access to `binaries.prisma.sh`.
 
@@ -65,7 +65,7 @@ lib/
   integrations/      token encryption, OAuth state signing, and connection repository
   exports/           JSON export builders
   markdown-frontmatter.ts   lossless title/description round-trip for exported .md files
-  prompts/           builds the "prepare Memories" and "generate quiz" AI prompts
+  prompts/           builds the "prepare notes" and "generate quiz" AI prompts
   pdf-export.ts / word-export.ts   matching print-first PDF and Word document rendering
   quiz-grading.ts     shared grading logic (used by both saved attempts and guest mode)
   rate-limit.ts / guest-rate-limit.ts   durable database-backed throttling (see Security below)
@@ -81,14 +81,14 @@ This is deliberately **not** implicit ORM magic: `lib/notes-repo.ts` and `lib/re
 ## How the AI-assisted workflow works
 
 1. **Import** — upload a `.md`/`.txt`/`.pdf`/`.docx` file (or a Memoria `.json` export, see Round-trip below), paste content, or connect your own Google Drive/Notion workspace and choose a document. Image-heavy files pause for an explicit OCR/partial-import decision.
-2. **Generate a prompt** — select Memories, pick a processing style, and Memoria builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memoria renders it with full typography.
+2. **Generate a prompt** — select notes, pick a processing style, and Memoria builds a prompt asking for a clean **Markdown** document back (see `lib/prompts/note-prompt.ts` and `lib/prompts/quiz-prompt.ts`). Reviewers deliberately are *not* a rigid JSON schema — Markdown is far more reliable for a model to produce correctly, and Memoria renders it with full typography.
 3. **Generate or copy** — use an encrypted, user-owned OpenAI/Anthropic/Gemini key for direct generation, or copy the prompt into any AI assistant yourself.
 4. **Import the result** — paste the response back into Memoria. Reviewer content just needs to be non-trivial Markdown; quiz content is validated against a Zod schema (`lib/validation/quiz.ts`) that's deliberately lenient about common AI quirks — it strips ```` ```json ```` code fences, accepts either casing for enum values, tolerates a missing/duplicate question `id` by reassigning one, and reports the rest as clear field-level errors instead of a wall of raw Zod output.
 5. **Study** — turn the result into flashcards, quizzes, and exams, and track attempts over time.
 
 ## Round-trip fidelity (export → re-import)
 
-Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so re-importing recovers the exact original title/description instead of guessing from the filename. Versioned Memoria `.json` exports restore Memories, reviewers, and quizzes through the same Upload File flow. Legacy `memora-*` files remain accepted for backward compatibility; newly downloaded files use `memoria-*` identifiers.
+Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so re-importing recovers the exact original title/description instead of guessing from the filename. Versioned Memoria `.json` exports restore notes, reviewers, and quizzes through the same Upload File flow. Legacy `memora-*` files remain accepted for backward compatibility; newly downloaded files use `memoria-*` identifiers.
 
 ## PDF and Word export
 
@@ -123,7 +123,7 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 
 ## Shipped feature status
 
-**Implemented:** auth and session-conflict handling; skippable onboarding; Memories CRUD; validated local and per-user connected-app imports; OCR warnings for image-heavy sources; lossless Memoria round trips; a unified Archive; full-copy duplication with tags/source links/collection placement; Markdown editing; exactly two reviewer creation paths; reviewer/quiz generation; 7 question types; Review and Exam modes; Pomodoro/timers and auto-grading; results and spaced-repetition flashcards; guest mode; revocable public Memory links and editor sharing with user search; public/private Collections; collection feedback threads and moderation hooks; notifications with unread indicator and contextual click-through; PDF/Word/JSON/Markdown/text exports; global search; dark/light/system themes; and compressed at-rest content.
+**Implemented:** auth and session-conflict handling; skippable onboarding; notes CRUD; validated local and per-user connected-app imports; OCR warnings for image-heavy sources; lossless Memoria round trips; a unified Archive; full-copy duplication with tags/source links/collection placement; Markdown editing; exactly two reviewer creation paths; reviewer/quiz generation; 7 question types; Review and Exam modes; Pomodoro/timers and auto-grading; results and spaced-repetition flashcards; guest mode; revocable public note links and editor sharing with user search; public/private Collections; collection feedback threads and moderation hooks; notifications with unread indicator and contextual click-through; PDF/Word/JSON/Markdown/text exports; global search; dark/light/system themes; and compressed at-rest content.
 
 ### Optional connection setup
 
@@ -136,4 +136,4 @@ The study system persists editable flashcards, schedules reviews with spaced rep
 
 ## Design system
 
-Custom palette and type system in `tailwind.config.ts` and `app/globals.css` — ink-navy primary, amber "highlighter" accent, Fraunces (display serif) + Inter (body) + IBM Plex Mono. Rendered Markdown gets its own typography pass (`.memora-markdown` in `globals.css`) so Memories and reviewers look like a designed document, not a raw text dump — and PDF exports inherit the exact same styling.
+Custom palette and type system in `tailwind.config.ts` and `app/globals.css` — ink-navy primary, amber "highlighter" accent, Fraunces (display serif) + Inter (body) + IBM Plex Mono. Rendered Markdown gets its own typography pass (`.memora-markdown` in `globals.css`) so notes and reviewers look like a designed document, not a raw text dump — and PDF exports inherit the exact same styling.

@@ -14,7 +14,7 @@ const optionsSchema = z.object({
 });
 
 const bodySchema = z.object({
-  title: z.string().min(1).max(200).default("My memories"),
+  title: z.string().min(1).max(200).default("My notes"),
   content: z.string().min(1).max(MAX_GUEST_CONTENT_CHARS),
   options: optionsSchema.default({}),
 });

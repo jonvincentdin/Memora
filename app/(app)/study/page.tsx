@@ -8,7 +8,7 @@ import { formatRelativeTime } from "@/lib/utils";
 export default async function StudyHubPage() {
   const user = await requireUser();
   const [reviewers, recentMistakeAttempts, dueCount, recentReviews] = await Promise.all([
-    prisma.reviewer.findMany({ where: { ownerId: user.id }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true, updatedAt: true } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true, updatedAt: true } }),
     prisma.quizAttempt.findMany({
       where: { userId: user.id, completedAt: { not: null } },
       orderBy: { completedAt: "desc" },
@@ -52,9 +52,11 @@ export default async function StudyHubPage() {
           <EmptyState
             icon={GraduationCap}
             title="No reviewers yet."
-            description="Build a reviewer from your memories first, then study it here as flashcards."
+            description="Build a reviewer from your notes first, then study it here as flashcards."
             actionLabel="Create a reviewer"
-            actionHref="/reviewers"
+            actionHref="/reviewers?create=1"
+            secondaryActionLabel="Import a note"
+            secondaryActionHref="/notes/import"
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
