@@ -262,38 +262,44 @@ function FeedbackSection({
 }) {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [sending, setSending] = useState<string | null>(null);
+  const [error, setError] = useState<{ target: string; message: string } | null>(null);
   const [sent, setSent] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  async function submit() {
-    if (!message.trim()) return;
-    setSending(true);
+  async function submit(content: string, parentId?: string) {
+    const target = parentId ?? "root";
+    if (!content.trim()) return;
+    setSending(target);
     setError(null);
     try {
       const res = await fetch(`/api/collections/public/${slug}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ authorName: name.trim() || undefined, message: message.trim(), parentId: replyTo ?? undefined }),
+        body: JSON.stringify({ authorName: name.trim() || undefined, message: content.trim(), parentId }),
       });
       const data = await res.json().catch(() => null);
       if (!data) {
-        setError("The server sent back something unexpected. Please try again.");
+        setError({ target, message: "The server sent back something unexpected. Please try again." });
       } else if (!res.ok) {
-        setError(data.error ?? "Couldn't send feedback.");
+        setError({ target, message: data.error ?? "Couldn't send feedback." });
       } else {
-        onSubmitted({ id: data.feedback.id, authorName: data.feedback.authorName ?? (name.trim() || null), authorUserId: data.feedback.authorUserId ?? viewerUserId, message: message.trim(), createdAt: new Date(), updatedAt: new Date(), parentId: replyTo });
-        setMessage("");
-        setReplyTo(null);
-        setSent(true);
-        setTimeout(() => setSent(false), 2000);
+        onSubmitted({ id: data.feedback.id, authorName: data.feedback.authorName ?? (name.trim() || null), authorUserId: data.feedback.authorUserId ?? viewerUserId, message: content.trim(), createdAt: new Date(), updatedAt: new Date(), parentId: parentId ?? null });
+        if (parentId) {
+          setReplyMessage("");
+          setReplyTo(null);
+        } else {
+          setMessage("");
+          setSent(true);
+          setTimeout(() => setSent(false), 2000);
+        }
       }
     } catch {
-      setError("We couldn't reach the server. Check your connection and try again.");
+      setError({ target, message: "We couldn't reach the server. Check your connection and try again." });
     }
-    setSending(false);
+    setSending(null);
   }
 
   async function editComment(id: string, current: string) {
@@ -327,13 +333,13 @@ function FeedbackSection({
       <div className="card mt-4 p-5">
         {!viewerUserId && <><Label htmlFor="feedback-name">Name (optional)</Label><Input id="feedback-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Anonymous" className="mt-1.5" /></>}
         <div className="mt-3">
-          <div className="flex items-center justify-between"><Label htmlFor="feedback-message">{replyTo ? "Your reply" : "Your feedback"}</Label>{replyTo && <button onClick={() => setReplyTo(null)} className="text-xs text-ink-faint hover:text-ink">Cancel reply</button>}</div>
+          <Label htmlFor="feedback-message">Your feedback</Label>
           <Textarea id="feedback-message" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Thoughts, corrections, questions…" className="mt-1.5" />
         </div>
-        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+        {error?.target === "root" && <p className="mt-2 text-sm text-danger">{error.message}</p>}
         <div className="mt-3 flex items-center justify-end gap-2">
           {sent && <span className="text-sm text-success">Sent, thank you!</span>}
-          <Button onClick={submit} loading={sending} disabled={!message.trim()}>
+          <Button onClick={() => void submit(message)} loading={sending === "root"} disabled={!message.trim()}>
             Send feedback
           </Button>
         </div>
@@ -347,7 +353,36 @@ function FeedbackSection({
               <p className="mt-1 text-xs text-ink-faint">
                 {f.authorName || "Anonymous"} · {formatRelativeTime(f.createdAt)}{f.updatedAt.getTime() - f.createdAt.getTime() > 1000 ? " · edited" : ""}
               </p>
-              <div className="mt-2 flex gap-3 text-xs font-medium"><button onClick={() => { setReplyTo(f.id); document.getElementById("feedback-message")?.focus(); }} className="text-accent-dark hover:underline">Reply</button>{viewerUserId === f.authorUserId ? <><button disabled={editingId === f.id} onClick={() => editComment(f.id, f.message)} className="text-ink-soft hover:underline">Edit</button><button onClick={() => deleteComment(f.id)} className="text-danger hover:underline">Delete</button></> : viewerUserId && <button onClick={() => reportComment(f.id)} className="text-ink-faint hover:text-danger">Report</button>}</div>
+              <div className="mt-2 flex gap-3 text-xs font-medium">
+                <button
+                  type="button"
+                  aria-expanded={replyTo === f.id}
+                  aria-controls={`reply-form-${f.id}`}
+                  onClick={() => {
+                    setError(null);
+                    setReplyMessage("");
+                    setReplyTo((current) => current === f.id ? null : f.id);
+                  }}
+                  className="text-accent-dark hover:underline"
+                >
+                  Reply
+                </button>
+                {viewerUserId === f.authorUserId ? <><button disabled={editingId === f.id} onClick={() => editComment(f.id, f.message)} className="text-ink-soft hover:underline">Edit</button><button onClick={() => deleteComment(f.id)} className="text-danger hover:underline">Delete</button></> : viewerUserId && <button onClick={() => reportComment(f.id)} className="text-ink-faint hover:text-danger">Report</button>}
+              </div>
+              {replyTo === f.id && (
+                <div id={`reply-form-${f.id}`} className="mt-3 rounded-lg border border-accent/30 bg-accent-soft/15 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor={`reply-message-${f.id}`}>Reply to {f.authorName || "Anonymous"}</Label>
+                    <button type="button" onClick={() => { setReplyTo(null); setReplyMessage(""); setError(null); }} className="text-xs text-ink-faint hover:text-ink">Cancel</button>
+                  </div>
+                  {!viewerUserId && <Input id={`reply-name-${f.id}`} value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name (optional)" className="mt-2" />}
+                  <Textarea id={`reply-message-${f.id}`} autoFocus rows={3} value={replyMessage} onChange={(event) => setReplyMessage(event.target.value)} placeholder="Write your reply…" className="mt-2" />
+                  {error?.target === f.id && <p className="mt-2 text-sm text-danger">{error.message}</p>}
+                  <div className="mt-2 flex justify-end">
+                    <Button size="sm" onClick={() => void submit(replyMessage, f.id)} loading={sending === f.id} disabled={!replyMessage.trim()}>Send reply</Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
