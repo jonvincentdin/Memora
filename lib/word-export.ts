@@ -1,9 +1,38 @@
-import { AlignmentType, Document, Footer, HeadingLevel, Packer, PageBreak, PageNumber, Paragraph, TextRun } from "docx";
+import { AlignmentType, Document, Footer, HeadingLevel, ImageRun, Packer, PageBreak, PageNumber, Paragraph, TextRun } from "docx";
 import type { QuizQuestion } from "@/lib/validation/quiz";
 import { formatCorrectAnswer } from "@/lib/quiz-grading";
 
 const PAGE_MARGIN = 960;
 const FONT = "Arial";
+const BRAND_SLOGAN = "Turn scattered notes into structured knowledge.";
+const BRAND_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g fill="none" stroke="#f2aa36" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path d="M22 14h27v38H23a8 8 0 0 1-8-8V22a8 8 0 0 1 7-7.94"/><path d="M15 44a8 8 0 0 1 8-8h26"/><path d="M29 14v15l6-5 6 5V14"/></g></svg>`;
+const BRAND_LOGO_PNG = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAQKADAAQAAAABAAAAQAAAAABGUUKwAAADvklEQVR4Ae2aT0gUURzHf2/WLCiULQhDPUQdMi+Vu+uhoHPRH61Y/wQds1uXgsBLh+iQhREd0nOmDpQGQafo3GpZgl2sQ2QlXnSlUFd3fv2eOcybCXX37XN2Rt/AML/f+zvfz/zmvTdvF0AfmoAmoAloApqAJqAJaAKagCawFQkwVaLf3oaSozXxC4zBeQbsJLVbqartHNqZQMu6Wt48/DqHsq4iJS5P0pk1Y+cQ2WPGWLVkE4VWq2KG0U2N5N2/UWDPLN0f7wQwXhZRvC2hyjbyuRYUAWkz3knhfj2fDoNWVhrAtJlopAHEIx4ziPAEGPaMT+NIrO39oih41kyg6JclU2uOQeuV9+aLbedqSwHgAx69Ow9cnSD+XMpmT+1u/TDqSg+4IwXg2KHYJXp0+x1tuJDFpdO7W0dCJZ7fv9wgaLCzjngAROyONo98EtPCYssBQKh3CWTw1OWHyJEDAFAhapybz4yJfphsqTGA5vydosiKK6N/RD9fO90Xa6aFzH1ej1Z0N2hF15dvG7LlZSNAtj9vPZY2Y3dIfC9l8KVzJbd5GtlrTpHehmR9qQiQ7cxbb9aMPyedjd50BkY75R32pm+EX+QI+F+8I3KtPKdUoVaRAYi3j5M0AtDp7xEIAAj4cTELCX5y208EAQCAA3PzCyf2tAx95ye3KRIG/ILgMwD85RKGcLcsOXRRnEa5zdOA8lxlwVPXnSnt+Q3gGj1dgoCTNN+3lDWl2unOXV+IK0qQ5/EyvOxKHaqr/pCaa72foet91qq/7X8tqrgPnyNgo1DIt7vlAShbCQ531W07WB5pYAY20OruOAPcR9dS+WfjT00lAPj2mIHYQVviB5wlvNTw4o9qoRclACIAL4DUh/HQY4Dap8Z3hbELLOxZiMyP7U2O/Vbbvrs17zTozs3NU/IKrHT1IwtwJto07OtaPjeZq5dSBAAzy+KTQ6ESz7EoGQN42EdDKF4ZAP7Orx5kwc5REgF8wAu2zNXvThIA/QK4SQ5JAGxK1L89u6NW9MNkSwGgbas3LpEGu+zyQ+TIAbDYoKiRfihpmzbjR8S0sNhSAL6ks4M09X11RLLSCLBXYYQgBYD/8cFi7KYDYNmqpI+id+n+2KN0b139lFm7y5MfSLegT7gZM3GPCHpBFE2ozNacVATYCh9+Tt2yADpsP4zXgiLAFuxsiDDaECnaMUERUJ1v7wVFgN1ZNJkaGJ+xaiwLkjRFPqNV0jfays7Y+T5cl/8o6UM/ugtNQBPQBDQBTUAT0AQ0gU1D4C9NDxyykT0tXgAAAABJRU5ErkJggg==";
+
+function decodeBase64(value: string) {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+}
+
+function brandHeader() {
+  return [
+    new Paragraph({
+      spacing: { after: 20 },
+      children: [
+        new ImageRun({
+          type: "svg",
+          data: new TextEncoder().encode(BRAND_LOGO_SVG),
+          transformation: { width: 28, height: 28 },
+          fallback: { type: "png", data: decodeBase64(BRAND_LOGO_PNG) },
+          altText: { title: "Memoria logo", description: "Memoria book and bookmark logo", name: "Memoria logo" },
+        }),
+        new TextRun({ text: "  Memoria", bold: true, size: 34, color: "1B1F3B", font: "Georgia" }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 300 },
+      children: [new TextRun({ text: BRAND_SLOGAN, size: 18, color: "525770" })],
+    }),
+  ];
+}
 
 function footer(title: string) {
   return new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Made with Memoria  |  ${title}  |  `, size: 16, color: "666666" }), new TextRun({ children: [PageNumber.CURRENT], size: 16, color: "666666" })] })] });
@@ -23,7 +52,7 @@ function cleanInline(text: string) {
 }
 
 function markdownParagraphs(title: string, markdown: string) {
-  const rows: Paragraph[] = [new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: title, bold: true, size: 40, color: "1B1F3B" })] }), new Paragraph({ children: [new TextRun({ text: "Made with Memoria", italics: true, size: 18, color: "777777" })] })];
+  const rows: Paragraph[] = [...brandHeader(), new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: title, bold: true, size: 40, color: "1B1F3B" })] })];
   for (const raw of markdown.split("\n")) {
     const line = raw.trimEnd();
     if (!line) { rows.push(new Paragraph({})); continue; }
@@ -47,8 +76,12 @@ async function downloadDocument(document: Document, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+export function buildMarkdownWord(title: string, markdown: string) {
+  return baseDocument(title, markdownParagraphs(title, markdown));
+}
+
 export async function exportMarkdownToWord(title: string, markdown: string) {
-  await downloadDocument(baseDocument(title, markdownParagraphs(title, markdown)), title);
+  await downloadDocument(buildMarkdownWord(title, markdown), title);
 }
 
 function options(question: QuizQuestion) {
@@ -60,8 +93,9 @@ function options(question: QuizQuestion) {
 
 export async function exportQuizToWord(title: string, questions: QuizQuestion[], metadata: { author?: string | null; mode?: string } = {}) {
   const children: Paragraph[] = [
+    ...brandHeader(),
     new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: title, bold: true, size: 40, color: "1B1F3B" })] }),
-    new Paragraph({ children: [new TextRun(`Memoria  |  ${new Date().toLocaleDateString()}  |  ${questions.length} questions  |  ${metadata.mode?.replace(/_/g, " ") ?? "Quiz / Exam"}`)] }),
+    new Paragraph({ children: [new TextRun(`${new Date().toLocaleDateString()}  |  ${questions.length} questions  |  ${metadata.mode?.replace(/_/g, " ") ?? "Quiz / Exam"}`)] }),
     new Paragraph({ children: [new TextRun(`Author: ${metadata.author?.trim() || "Memoria user"}`)] }),
     new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "QUESTIONS", bold: true })] }),
   ];

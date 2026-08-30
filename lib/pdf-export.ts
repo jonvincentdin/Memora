@@ -5,6 +5,39 @@ import { formatCorrectAnswer } from "@/lib/quiz-grading";
 
 const PAGE_MARGIN = 48;
 const LINE_HEIGHT = 16;
+const BRAND_ORANGE: [number, number, number] = [242, 170, 54];
+const BRAND_INK: [number, number, number] = [27, 31, 59];
+const BRAND_SLOGAN = "Turn scattered notes into structured knowledge.";
+
+function drawBrandHeader(doc: jsPDF, pageWidth: number): number {
+  const iconX = PAGE_MARGIN;
+  const iconY = 34;
+  const iconWidth = 24;
+  const iconHeight = 28;
+
+  // Draw the same open-book/bookmark mark used by the Memoria app icon.
+  doc.setDrawColor(...BRAND_ORANGE);
+  doc.setLineWidth(1.8);
+  doc.roundedRect(iconX + 3, iconY, iconWidth - 3, iconHeight, 2, 2, "S");
+  doc.line(iconX + 3, iconY + 19, iconX + iconWidth, iconY + 19);
+  doc.line(iconX + 10, iconY, iconX + 10, iconY + 11);
+  doc.line(iconX + 10, iconY + 11, iconX + 15, iconY + 7);
+  doc.line(iconX + 15, iconY + 7, iconX + 20, iconY + 11);
+
+  doc.setTextColor(...BRAND_INK);
+  doc.setFont("times", "bold");
+  doc.setFontSize(17);
+  doc.text("Memoria", iconX + 36, iconY + 12);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(82, 87, 112);
+  doc.text(BRAND_SLOGAN, iconX + 36, iconY + 26);
+
+  doc.setDrawColor(222, 218, 207);
+  doc.setLineWidth(0.7);
+  doc.line(PAGE_MARGIN, iconY + iconHeight + 13, pageWidth - PAGE_MARGIN, iconY + iconHeight + 13);
+  return iconY + iconHeight + 38;
+}
 
 /**
  * Renders a Markdown string into a downloadable PDF entirely client-side —
@@ -100,6 +133,7 @@ export function buildMarkdownPdf(title: string, markdown: string): jsPDF {
   }
 
   startPage();
+  y = drawBrandHeader(doc, pageWidth);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.text(stripInlineMarkdown(title), PAGE_MARGIN, y);
@@ -226,13 +260,7 @@ export function exportQuizToPdf(title: string, questions: QuizQuestion[], metada
   startPage();
 
   // 1. Header
-  doc.setFillColor(27, 31, 59);
-  doc.rect(0, 0, pageWidth, 34, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("MEMORIA  |  STUDY & ASSESSMENT", PAGE_MARGIN, 22);
-  y = 62;
+  y = drawBrandHeader(doc, pageWidth);
   writeWrapped(title, { size: 22, style: "bold", gapAfter: 8 });
 
   const exportDate = (metadata.date ?? new Date()).toLocaleDateString();

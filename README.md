@@ -92,7 +92,7 @@ Exported `.md` files carry a small frontmatter header (`--- title: ... ---`) so 
 
 ## PDF and Word export
 
-Exports use an explicit white-page, dark-text template independent of the app theme. Every quiz/exam document contains a Memoria/title/metadata header, numbered questions and response options, then an answer key with the correct answer and explanation for every question. PDF content is drawn directly with `jsPDF`, preventing the browser CSS/canvas bug that produced correctly paginated but blank files. Word exports share the A4 margins, hierarchy, section order, typography, page breaks, and “Made with Memoria” footer.
+Exports use an explicit white-page, dark-text template independent of the app theme. Every PDF and Word document begins with the Memoria logo, label, and “Turn scattered notes into structured knowledge.” slogan. Every quiz/exam document then contains its title and metadata, numbered questions and response options, followed by an answer key with the correct answer and explanation for every question. PDF content is drawn directly with `jsPDF`, preventing the browser CSS/canvas bug that produced correctly paginated but blank files. Word exports share the A4 margins, hierarchy, section order, typography, page breaks, branding, and “Made with Memoria” footer.
 
 ## Guest / quick mode (`/guest`)
 
