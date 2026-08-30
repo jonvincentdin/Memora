@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   title: "Memoria — Turn your notes into knowledge",
   description:
     "Import your notes, organize them into reviewers, and test yourself with customizable quizzes and exams.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
