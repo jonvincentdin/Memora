@@ -24,6 +24,10 @@ const config: Config = {
           soft: "rgb(var(--color-accent-soft) / <alpha-value>)",
           dark: "rgb(var(--color-accent-dark) / <alpha-value>)",
         },
+        action: {
+          DEFAULT: "rgb(var(--color-action) / <alpha-value>)",
+          foreground: "rgb(var(--color-action-foreground) / <alpha-value>)",
+        },
         line: "rgb(var(--color-line) / <alpha-value>)",
         surface: "rgb(var(--color-surface) / <alpha-value>)",
         success: "rgb(var(--color-success) / <alpha-value>)",

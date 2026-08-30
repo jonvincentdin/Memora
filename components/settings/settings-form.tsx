@@ -66,7 +66,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
               onClick={() => save({ appearance: a })}
               className={cn(
                 "rounded-lg border px-4 py-2 text-sm capitalize",
-                theme === a ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5"
+                theme === a ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5"
               )}
             >
               {a.toLowerCase()}
@@ -125,7 +125,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           </label>
           <label className="flex items-center gap-2 text-sm text-ink">
             <input type="checkbox" checked={settings.autoSave} onChange={(e) => save({ autoSave: e.target.checked })} />
-            Auto-save notes and reviewers while editing
+            Auto-save memories and reviewers while editing
           </label>
         </div>
       </section>

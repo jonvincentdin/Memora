@@ -27,7 +27,7 @@ interface PickerRow { id: string; title: string }
 interface FeedbackRow { id: string; authorName: string | null; message: string; createdAt: string }
 
 const TABS: { type: ResourceType; label: string }[] = [
-  { type: "NOTE", label: "Notes" },
+  { type: "NOTE", label: "Memories" },
   { type: "REVIEWER", label: "Reviewers" },
   { type: "QUIZ", label: "Quizzes" },
 ];
@@ -245,7 +245,7 @@ export function CollectionEditor({
           <button
             key={item.type}
             onClick={() => setTab(item.type)}
-            className={cn("rounded-md px-4 py-1.5 text-sm font-medium", tab === item.type ? "bg-ink text-white" : "text-ink-soft hover:bg-ink/5")}
+            className={cn("rounded-md px-4 py-1.5 text-sm font-medium", tab === item.type ? "bg-action text-action-foreground" : "text-ink-soft hover:bg-ink/5")}
           >
             {item.label} {counts[item.type] > 0 && `(${counts[item.type]})`}
           </button>

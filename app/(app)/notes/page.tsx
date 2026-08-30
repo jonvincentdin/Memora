@@ -26,14 +26,14 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl text-ink">Notes</h1>
+          <h1 className="font-display text-2xl text-ink">Memories</h1>
           <p className="mt-1 text-sm text-ink-soft">Everything you&apos;ve imported, in one library.</p>
         </div>
         <Link
           href="/notes/import"
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-ink/90"
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-action px-4 text-sm font-medium text-action-foreground hover:bg-action/90"
         >
-          <Plus className="h-4 w-4" /> Import note
+          <Plus className="h-4 w-4" /> Import memory
         </Link>
       </div>
       <div className="mb-5"><LibraryNavigation basePath="/notes" page={page} hasNext={notes.length === 24} /></div>
@@ -42,8 +42,8 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
         <EmptyState
           icon={FileText}
           title="Your study library is empty."
-          description="Import your first note to get started."
-          actionLabel="Import your first note"
+          description="Import your first memory to get started."
+          actionLabel="Import your first memory"
           actionHref="/notes/import"
         />
       ) : (
@@ -57,7 +57,7 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
               <p className="font-display text-base text-ink line-clamp-1">{note.title}</p>
               {note.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
               <p className="mt-1 text-sm text-ink-soft line-clamp-2">
-                {note.description || note.originalFilename || "Open this note to view the lesson."}
+                {note.description || note.originalFilename || "Open this memory to view the lesson."}
               </p>
             </Link>
           ))}

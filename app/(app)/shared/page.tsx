@@ -34,7 +34,7 @@ export default async function SharedWithMePage() {
       <p className="mt-1 text-sm text-ink-soft">Resources and private collections other Memoria users have shared with you.</p>
 
       <div className="mt-4 flex gap-1 rounded-lg border border-line bg-surface p-1 w-fit">
-        <span className="rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-white">Shared with me</span>
+        <span className="rounded-md bg-action px-4 py-1.5 text-sm font-medium text-action-foreground">Shared with me</span>
         <Link href="/shared/collections" className="rounded-md px-4 py-1.5 text-sm font-medium text-ink-soft hover:bg-ink/5">
           My collections
         </Link>
@@ -45,7 +45,7 @@ export default async function SharedWithMePage() {
           <EmptyState
             icon={Share2}
             title="Nothing shared with you yet."
-            description="When someone shares a note, reviewer, or quiz with your account, it'll show up here."
+            description="When someone shares a memory, reviewer, or quiz with your account, it'll show up here."
           />
         </div>
       ) : (

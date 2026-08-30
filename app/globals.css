@@ -10,6 +10,8 @@
   --color-accent: 232 163 61;
   --color-accent-soft: 252 234 203;
   --color-accent-dark: 193 128 30;
+  --color-action: 27 31 59;
+  --color-action-foreground: 255 255 255;
   --color-line: 228 225 216;
   --color-surface: 255 255 255;
   --color-success: 46 125 91;
@@ -28,6 +30,8 @@
   --color-accent: 232 163 61;
   --color-accent-soft: 58 44 20;
   --color-accent-dark: 240 180 99;
+  --color-action: 232 163 61;
+  --color-action-foreground: 27 31 59;
   --color-line: 49 54 77;
   --color-surface: 27 31 46;
   --color-success: 76 175 131;

@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, Bell } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { NotificationMenu } from "@/components/notifications/notification-menu";
 
 export function Topbar({ userName, unreadNotifications }: { userName: string; unreadNotifications: number }) {
   const router = useRouter();
@@ -80,7 +81,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
             else if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => Math.min(suggestions.length - 1, current + 1)); }
             else if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => Math.max(-1, current - 1)); }
           }}
-          placeholder="Search notes, reviewers, quizzes…"
+          placeholder="Search memories, reviewers, quizzes…"
           role="combobox"
           aria-label="Search your study material"
           aria-expanded={searchOpen}
@@ -97,7 +98,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
             {!searching && suggestions.length === 0 ? (
               <div className="p-3">
                 <p className="text-sm text-ink-soft">{query.trim() ? "No quick matches. Try searching all results." : "Your library is empty. Import something to make it searchable."}</p>
-                {!query.trim() && <Link href="/notes/import" onClick={() => setSearchOpen(false)} className="mt-2 inline-flex text-sm font-medium text-accent-dark hover:underline">Import your first note</Link>}
+                {!query.trim() && <Link href="/notes/import" onClick={() => setSearchOpen(false)} className="mt-2 inline-flex text-sm font-medium text-accent-dark hover:underline">Import your first memory</Link>}
               </div>
             ) : suggestions.map((suggestion, index) => {
               const Icon = suggestion.type === "note" ? FileText : suggestion.type === "reviewer" ? Layers : ListChecks;
@@ -108,7 +109,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
               </button>;
             })}
             {query.trim() && <button type="submit" onMouseEnter={() => setSelectedIndex(-1)} className="mt-1 flex w-full items-center justify-between border-t border-line px-3 py-3 text-left text-sm font-medium text-ink hover:bg-ink/[0.03]"><span>Search all for “{query.trim()}”</span><ArrowRight className="h-4 w-4" /></button>}
-            {!query.trim() && suggestions.length > 0 && <div className="mt-1 grid grid-cols-3 gap-1 border-t border-line pt-2">{[["Notes", "/notes"], ["Reviewers", "/reviewers"], ["Quizzes", "/quizzes"]].map(([label, href]) => <Link key={href} href={href} onClick={() => setSearchOpen(false)} className="rounded-md px-2 py-2 text-center text-xs text-ink-soft hover:bg-ink/5 hover:text-ink">Browse {label}</Link>)}</div>}
+            {!query.trim() && suggestions.length > 0 && <div className="mt-1 grid grid-cols-3 gap-1 border-t border-line pt-2">{[["Memories", "/notes"], ["Reviewers", "/reviewers"], ["Quizzes", "/quizzes"]].map(([label, href]) => <Link key={href} href={href} onClick={() => setSearchOpen(false)} className="rounded-md px-2 py-2 text-center text-xs text-ink-soft hover:bg-ink/5 hover:text-ink">Browse {label}</Link>)}</div>}
           </div>
         )}
       </form>
@@ -117,21 +118,18 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
         <ThemeToggle className="hidden sm:inline-flex" />
         <Link
           href="/notes/import"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-ink px-2.5 text-sm font-medium text-white hover:bg-ink/90 sm:px-3.5"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-action px-2.5 text-sm font-medium text-action-foreground hover:bg-action/90 sm:px-3.5"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Create</span>
         </Link>
 
-        <Link href="/notifications" aria-label={`${unreadNotifications} unread notifications`} className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${unreadNotifications > 0 ? "border-danger/40 bg-danger/10 text-danger" : "border-line bg-surface text-ink-soft hover:text-ink"}`}>
-          <Bell className="h-4 w-4" />
-          {unreadNotifications > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-danger" />}
-        </Link>
+        <NotificationMenu initialUnreadCount={unreadNotifications} />
 
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-sm font-medium text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-action text-sm font-medium text-action-foreground"
             aria-label="Account menu"
           >
             {userName.charAt(0).toUpperCase()}

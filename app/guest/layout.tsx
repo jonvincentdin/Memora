@@ -13,7 +13,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link href="/register" className="inline-flex h-9 items-center rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-ink/90">
+            <Link href="/register" className="inline-flex h-9 items-center rounded-lg bg-action px-4 text-sm font-medium text-action-foreground hover:bg-action/90">
               Create a free account
             </Link>
           </div>

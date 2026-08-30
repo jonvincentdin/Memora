@@ -63,7 +63,7 @@ export function FileDropzone({ onFileSelected, onFilesSelected, accept = ".md,.t
       ) : (
         <>
           <UploadCloud className="mb-3 h-8 w-8 text-ink-faint" />
-          <p className="font-medium text-ink">Drop your notes here</p>
+          <p className="font-medium text-ink">Drop your memories here</p>
           <p className="mt-1 text-xs text-ink-faint">Supported: MD, TXT, PDF, DOCX, and Memoria JSON exports</p>
         </>
       )}

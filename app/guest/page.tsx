@@ -27,7 +27,7 @@ export default function GuestPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="font-display text-2xl text-ink">Quick mode</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Get a ready-made prompt in one click, paste it (and your notes) into Claude, then bring the result back
+        Get a ready-made prompt in one click, paste it (and your memories) into Claude, then bring the result back
         here to preview and export. No account, no saving.
       </p>
 
@@ -36,7 +36,7 @@ export default function GuestPage() {
           <button
             key={activity.key}
             onClick={() => setTab(activity.key)}
-            className={cn("rounded-md py-2 text-sm font-medium", tab === activity.key ? "bg-ink text-white" : "text-ink-soft")}
+            className={cn("rounded-md py-2 text-sm font-medium", tab === activity.key ? "bg-action text-action-foreground" : "text-ink-soft")}
           >
             {activity.label}
           </button>

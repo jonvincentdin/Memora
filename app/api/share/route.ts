@@ -53,6 +53,7 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const normalizedEmail = parsedEmail.data;
   const grantee = await prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } });
   if (!grantee) {
+    if (permission === "EDIT") return NextResponse.json({ error: "Edit access can only be given to an existing Memoria user. Choose someone from the search results." }, { status: 404 });
     if (!emailDeliveryConfigured()) return NextResponse.json({ error: "That person does not have a Memoria account yet. Configure email delivery to invite new users." }, { status: 409 });
     if (!(await isOwner(user.id, resourceType, body.resourceId))) return NextResponse.json({ error: "Resource not found." }, { status: 404 });
     const invite = await prisma.resourceInvite.upsert({

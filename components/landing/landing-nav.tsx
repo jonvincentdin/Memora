@@ -26,7 +26,7 @@ export function LandingNav() {
           </Link>
           <Link
             href="/register"
-            className="inline-flex h-9 items-center rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-ink/90"
+            className="inline-flex h-9 items-center rounded-lg bg-action px-4 text-sm font-medium text-action-foreground hover:bg-action/90"
           >
             Get started
           </Link>

@@ -55,6 +55,13 @@ export default function ImportNotePage() {
 
   const linkType = useMemo(() => detectLinkType(link), [link]);
 
+  function navigateAfterSave(href: string) {
+    router.push(href);
+    // A mutation can leave previously visited library pages in the App
+    // Router cache. Refresh after navigation so the new Memory is visible.
+    router.refresh();
+  }
+
   async function handleFileImport() {
     if (!file) return;
     setError(null);
@@ -99,9 +106,9 @@ export default function ImportNotePage() {
         return;
       }
       if (data.errors?.length) setNotice(`${(data.notes?.length ?? 0) + (data.restored?.length ?? 0)} imported; ${data.errors.length} failed. ${data.errors[0].error}`);
-      if (data.redirect) router.push(data.redirect);
-      else if ((data.notes?.length ?? 0) + (data.restored?.length ?? 0) > 1) router.push("/dashboard");
-      else if (data.note) router.push(`/notes/${data.note.id}`);
+      if (data.redirect) navigateAfterSave(data.redirect);
+      else if ((data.notes?.length ?? 0) + (data.restored?.length ?? 0) > 1) navigateAfterSave("/dashboard");
+      else if (data.note) navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -113,7 +120,7 @@ export default function ImportNotePage() {
     setStatus("processing");
     const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: file?.name.replace(/\.[^/.]+$/, "") || "OCR import", content: ocrResult.trim() }) });
     const data = await response.json().catch(() => null);
-    if (response.ok) router.push(`/notes/${data.note.id}`);
+    if (response.ok) navigateAfterSave(`/notes/${data.note.id}`);
     else { setStatus("failed"); setError(data?.error ?? "Couldn't save the extracted text."); }
   }
 
@@ -138,7 +145,7 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -148,7 +155,7 @@ export default function ImportNotePage() {
   async function handlePastedSave() {
     setError(null);
     if (!pastedContent.trim()) {
-      setError("Paste the note content first.");
+      setError("Paste the memory content first.");
       return;
     }
 
@@ -158,7 +165,7 @@ export default function ImportNotePage() {
         const withProtocol = /^https?:\/\//i.test(link) ? link : `https://${link}`;
         resolvedTitle = new URL(withProtocol).hostname;
       } catch {
-        resolvedTitle = "Imported note";
+        resolvedTitle = "Imported memory";
       }
     }
 
@@ -167,7 +174,7 @@ export default function ImportNotePage() {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: resolvedTitle || "Imported note", content: pastedContent }),
+        body: JSON.stringify({ title: resolvedTitle || "Imported memory", content: pastedContent }),
       });
       const data = await res.json().catch(() => null);
       if (!data) {
@@ -180,7 +187,7 @@ export default function ImportNotePage() {
         setError(data.error ?? "Import failed.");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setStatus("failed");
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -224,7 +231,7 @@ export default function ImportNotePage() {
         setStatus("failed");
         return;
       }
-      router.push(`/notes/${data.note.id}`);
+      navigateAfterSave(`/notes/${data.note.id}`);
     } catch {
       setError("We couldn't reach the server.");
       setStatus("failed");
@@ -233,28 +240,28 @@ export default function ImportNotePage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-display text-2xl text-ink">Import a note</h1>
+      <h1 className="font-display text-2xl text-ink">Import a memory</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Bring in material from a file or a link. Notes are stored as Markdown, so headings, bold text, lists, and
+        Bring in material from a file or a link. Memories are stored as Markdown, so headings, bold text, lists, and
         tables all carry over.
       </p>
 
       <div className="mt-6 flex gap-1 rounded-lg border border-line bg-surface p-1">
         <button
           onClick={() => setTab("file")}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "file" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "file" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Upload className="mr-1.5 inline h-4 w-4" /> Upload File
         </button>
         <button
           onClick={() => setTab("link")}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "link" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "link" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Link2 className="mr-1.5 inline h-4 w-4" /> Import Link
         </button>
         <button
           onClick={() => { setTab("cloud"); if (resources.length === 0) void loadCloudResources(cloudProvider); }}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "cloud" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "cloud" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Cloud className="mr-1.5 inline h-4 w-4" /> Connected Apps
         </button>
@@ -307,7 +314,7 @@ export default function ImportNotePage() {
               <>
                 <div className="mt-4">
                   <Label htmlFor="import-title">Title</Label>
-                  <Input id="import-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Untitled note" />
+                  <Input id="import-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Untitled memory" />
                 </div>
 
                 <div className="mt-4">
@@ -317,7 +324,7 @@ export default function ImportNotePage() {
                     rows={8}
                     value={pastedContent}
                     onChange={(e) => setPastedContent(e.target.value)}
-                    placeholder="# Paste your exported note here…"
+                    placeholder="# Paste your exported memory here…"
                     className="font-mono text-sm"
                   />
                 </div>
@@ -333,7 +340,7 @@ export default function ImportNotePage() {
                   Cancel
                 </Button>
                 <Button onClick={handlePastedSave} loading={status === "processing"} disabled={!pastedContent.trim()}>
-                  Save note
+                  Save memory
                 </Button>
               </div>
             )}

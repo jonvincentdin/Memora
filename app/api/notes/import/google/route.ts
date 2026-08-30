@@ -4,6 +4,7 @@ import { requireUserOrNull } from "@/lib/auth/session";
 import { getAccessToken } from "@/lib/integrations/repository";
 import { syncConnectedNote } from "@/lib/notes-repo";
 import { withApiErrorHandling } from "@/lib/api/handler";
+import { revalidatePath } from "next/cache";
 
 const bodySchema = z.object({ fileId: z.string().min(1).max(200) });
 
@@ -24,5 +25,9 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   const content = await contentResponse.text();
   if (!content.trim()) return NextResponse.json({ error: "That Google document has no readable text." }, { status: 422 });
   const { note, refreshed } = await syncConnectedNote({ ownerId: user.id, title: metadata.name || "Imported Google document", originalFilename: metadata.name, sourceType: "GOOGLE_DOCS", sourceExternalId: parsed.data.fileId, sourceUrl: metadata.webViewLink, content });
+  revalidatePath("/notes");
+  revalidatePath(`/notes/${note.id}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
   return NextResponse.json({ note, status: refreshed ? "refreshed" : "complete" }, { status: refreshed ? 200 : 201 });
 });

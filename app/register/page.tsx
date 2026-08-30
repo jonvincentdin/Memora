@@ -75,7 +75,7 @@ export default function RegisterPage() {
         </Link>
         <div className="card p-7">
           <h1 className="font-display text-xl text-ink">Create your account</h1>
-          <p className="mt-1 text-sm text-ink-soft">Start turning your notes into structured study material.</p>
+          <p className="mt-1 text-sm text-ink-soft">Start turning your memories into structured study material.</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>

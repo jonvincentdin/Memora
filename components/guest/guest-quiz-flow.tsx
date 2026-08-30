@@ -20,7 +20,7 @@ const QUESTION_TYPES = [
   ["matching", "Matching"],
   ["short_answer", "Short answer"],
 ] as const;
-const PLACEHOLDER_NOTE = "[Paste your notes here before sending this prompt to the AI]";
+const PLACEHOLDER_NOTE = "[Paste your memories here before sending this prompt to the AI]";
 type TestMode = "review" | "exam";
 
 export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz" | "exam" }) {
@@ -199,18 +199,18 @@ export function GuestQuizFlow({ activityMode = "quiz" }: { activityMode?: "quiz"
       <div className="card p-5">
         <p className="text-sm font-medium text-ink">How would you like to create this {activityLabel}?</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <SourceButton active={source === "generate"} onClick={() => setSource("generate")} icon={<FileText className="mb-2 h-5 w-5" />} title="Generate with AI" description="Build a tailored prompt from notes or a topic." />
+          <SourceButton active={source === "generate"} onClick={() => setSource("generate")} icon={<FileText className="mb-2 h-5 w-5" />} title="Generate with AI" description="Build a tailored prompt from memories or a topic." />
           <SourceButton active={source === "import"} onClick={() => setSource("import")} icon={<FileJson className="mb-2 h-5 w-5" />} title="Import JSON" description="Open a Memoria quiz file directly in this browser." />
         </div>
       </div>
 
       {source === "generate" ? (
         <div className="card p-5">
-          <p className="mb-3 text-sm font-medium text-ink">1. Add notes or describe your topic</p>
+          <p className="mb-3 text-sm font-medium text-ink">1. Add memories or describe your topic</p>
           <FileDropzone onFileSelected={handleFileUpload} accept=".md,.txt,.pdf,.docx,.json" />
           {uploading && <p className="mt-2 text-xs text-ink-soft">Reading file…</p>}
           {notice && <p className="mt-2 rounded-lg border border-accent/30 bg-accent-soft/40 p-2.5 text-xs text-accent-dark">{notice}</p>}
-          <Textarea rows={6} value={notesText} onChange={(event) => setNotesText(event.target.value)} placeholder="Paste notes or describe the subject…" className="mt-3 font-mono text-sm" />
+          <Textarea rows={6} value={notesText} onChange={(event) => setNotesText(event.target.value)} placeholder="Paste memories or describe the subject…" className="mt-3 font-mono text-sm" />
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div><Label htmlFor="guest-qcount">Question count</Label><Input id="guest-qcount" type="number" min={1} max={50} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} /></div>
             <div><Label htmlFor="guest-difficulty">Difficulty</Label><select id="guest-difficulty" value={difficulty} onChange={(event) => setDifficulty(event.target.value as typeof difficulty)} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm">{["EASY", "NORMAL", "HARD", "MIXED"].map((item) => <option key={item} value={item}>{item}</option>)}</select></div>

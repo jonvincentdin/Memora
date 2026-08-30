@@ -29,7 +29,7 @@ export function ThemeToggle({ className }: { className?: string }) {
           onClick={() => setTheme(value)}
           className={cn(
             "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-            theme === value ? "bg-ink text-white" : "text-ink-faint hover:bg-ink/5 hover:text-ink"
+            theme === value ? "bg-action text-action-foreground" : "text-ink-faint hover:bg-ink/5 hover:text-ink"
           )}
         >
           <Icon className="h-3.5 w-3.5" />

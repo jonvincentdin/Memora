@@ -31,11 +31,11 @@ interface Source {
   title: string;
 }
 
-export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultReviewerId?: string; defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: (typeof MODES)[number]["value"] }; initiallyOpen?: boolean }) {
+export function QuizWizard({ notes, reviewers, defaultNoteId, defaultReviewerId, defaults, initiallyOpen = false }: { notes: Source[]; reviewers: Source[]; defaultNoteId?: string; defaultReviewerId?: string; defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: (typeof MODES)[number]["value"] }; initiallyOpen?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(Boolean(defaultReviewerId) || initiallyOpen);
+  const [open, setOpen] = useState(Boolean(defaultNoteId || defaultReviewerId) || initiallyOpen);
   const [step, setStep] = useState(1);
-  const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>(defaultNoteId ? [defaultNoteId] : []);
   const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>(defaultReviewerId ? [defaultReviewerId] : []);
   const [mode, setMode] = useState<(typeof MODES)[number]["value"]>(defaults.mode);
   const [questionCount, setQuestionCount] = useState(defaults.questionCount);
@@ -183,7 +183,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
 
       <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
         {["Select source", "Configure", "Generate & copy", "Import result"].map((label, i) => (
-          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-ink text-white" : "bg-ink/5")}>
+          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-action text-action-foreground" : "bg-ink/5")}>
             {i + 1}. {label}
           </span>
         ))}
@@ -191,6 +191,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
 
       {step === 1 && (
         <div>
+          <p className="mb-4 text-sm text-ink-soft">Choose existing Memories or reviewers from your library. You do not need to upload the same material again.</p>
           {reviewers.length > 0 && (
             <>
               <Label>Reviewers</Label>
@@ -208,9 +209,9 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
               </div>
             </>
           )}
-          <Label>Notes</Label>
+          <Label>Existing Memories</Label>
           {notes.length === 0 ? (
-            <p className="text-sm text-ink-soft">No notes yet.</p>
+            <p className="text-sm text-ink-soft">No memories yet.</p>
           ) : (
             <div className="max-h-48 space-y-1.5 overflow-y-auto">
               {notes.map((n) => (
@@ -240,7 +241,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
                 <button
                   key={m.value}
                   onClick={() => setMode(m.value)}
-                  className={cn("rounded-lg border px-3 py-2 text-sm", mode === m.value ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5")}
+                  className={cn("rounded-lg border px-3 py-2 text-sm", mode === m.value ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5")}
                 >
                   {m.label}
                 </button>

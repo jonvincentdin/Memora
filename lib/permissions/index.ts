@@ -67,6 +67,7 @@ export async function deleteSharesForResource(resourceType: ResourceType, resour
   await prisma.$transaction([
     prisma.resourceShare.deleteMany({ where: { resourceType, resourceId } }),
     prisma.resourceInvite.deleteMany({ where: { resourceType, resourceId } }),
+    prisma.publicResourceLink.deleteMany({ where: { resourceType, resourceId } }),
     prisma.shareCollectionItem.deleteMany({ where: { resourceType, resourceId } }),
     prisma.shareFeedback.deleteMany({ where: { resourceType, resourceId } }),
   ]);
@@ -108,8 +109,10 @@ export async function shareResource(params: {
       userId: grantee.id,
       permission: params.permission,
     },
+    include: { user: { select: { id: true, name: true, email: true } } },
   });
-  await prisma.notification.create({ data: { userId: grantee.id, type: "RESOURCE_SHARED", title: `A ${params.resourceType.toLowerCase()} was shared with you`, message: `You received ${params.permission.toLowerCase()} access.`, href: `/${params.resourceType.toLowerCase()}s/${params.resourceId}` } });
+  const resourceLabel = params.resourceType === "NOTE" ? "memory" : params.resourceType.toLowerCase();
+  await prisma.notification.create({ data: { userId: grantee.id, type: "RESOURCE_SHARED", title: `A ${resourceLabel} was shared with you`, message: `You received ${params.permission.toLowerCase()} access.`, href: `/${params.resourceType.toLowerCase()}s/${params.resourceId}` } });
   return share;
 }
 

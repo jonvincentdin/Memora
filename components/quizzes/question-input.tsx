@@ -21,7 +21,7 @@ export function QuestionInput({ question, value, onChange }: { question: QuizQue
             <button
               key={String(v)}
               onClick={() => onChange(v)}
-              className={cn("flex-1 rounded-lg border py-3 text-sm font-medium", value === v ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5")}
+              className={cn("flex-1 rounded-lg border py-3 text-sm font-medium", value === v ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5")}
             >
               {v ? "True" : "False"}
             </button>

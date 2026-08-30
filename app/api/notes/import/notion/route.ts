@@ -4,6 +4,7 @@ import { extractNotionPageId, importNotionPage, NotionImportError } from "@/lib/
 import { getAccessToken } from "@/lib/integrations/repository";
 import { syncConnectedNote } from "@/lib/notes-repo";
 import { withApiErrorHandling } from "@/lib/api/handler";
+import { revalidatePath } from "next/cache";
 
 // POST { url: string } — imports exactly the one Notion page the URL points
 // to. See lib/imports/notion-import.ts for why this can never reach more
@@ -32,6 +33,10 @@ export const POST = withApiErrorHandling(async (request: Request) => {
       sourceUrl: url,
       content,
     });
+    revalidatePath("/notes");
+    revalidatePath(`/notes/${note.id}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/search");
     return NextResponse.json(
       {
         note,

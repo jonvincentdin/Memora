@@ -13,18 +13,22 @@ const QuizWizard = dynamic(
 export function QuizWizardLauncher({
   notes,
   reviewers,
+  defaultNoteId,
   defaultReviewerId,
+  initiallyOpen = false,
   defaults,
 }: {
   notes: Array<{ id: string; title: string }>;
   reviewers: Array<{ id: string; title: string }>;
+  defaultNoteId?: string;
   defaultReviewerId?: string;
+  initiallyOpen?: boolean;
   defaults: { questionCount: number; difficulty: "EASY" | "NORMAL" | "HARD" | "MIXED"; mode: "QUIZ" | "PRACTICE_EXAM" | "MOCK_EXAM" | "TIMED_EXAM" | "MASTERY_TEST" };
 }) {
-  const [requested, setRequested] = useState(Boolean(defaultReviewerId));
+  const [requested, setRequested] = useState(Boolean(defaultNoteId || defaultReviewerId) || initiallyOpen);
 
   if (!requested) {
     return <Button onClick={() => setRequested(true)}><Plus className="h-4 w-4" /> Create quiz</Button>;
   }
-  return <QuizWizard notes={notes} reviewers={reviewers} defaultReviewerId={defaultReviewerId} defaults={defaults} initiallyOpen />;
+  return <QuizWizard notes={notes} reviewers={reviewers} defaultNoteId={defaultNoteId} defaultReviewerId={defaultReviewerId} defaults={defaults} initiallyOpen />;
 }
