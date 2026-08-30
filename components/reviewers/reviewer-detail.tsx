@@ -86,7 +86,7 @@ export function ReviewerDetail({ reviewer, isOwner, autoSave }: ReviewerDetailPr
           <ExportMenu options={[{ value: "pdf", label: "PDF document" }, { value: "docx", label: "Word document" }, { value: "md", label: "Markdown" }, { value: "json", label: "Memoria JSON" }]} onExport={handleExport} />
           <Link
             href={`/quizzes?fromReviewer=${reviewer.id}`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-medium text-ink hover:bg-accent-dark hover:text-white"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent px-3 text-sm font-medium text-ink hover:bg-accent-dark hover:text-white"
           >
             <Sparkles className="h-3.5 w-3.5" /> Create quiz
           </Link>
