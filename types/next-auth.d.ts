@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface User {
     onboardingCompletedAt?: Date | null;
     keepLoggedIn?: boolean;
+    userAgent?: string;
   }
 
   interface Session {
@@ -14,6 +15,8 @@ declare module "next-auth" {
       image?: string | null;
       sessionId?: string;
       sessionConflict?: boolean;
+      sessionConflictDevice?: string;
+      currentSessionDevice?: string;
     };
   }
 }
@@ -23,6 +26,8 @@ declare module "next-auth/jwt" {
     id: string;
     sessionId?: string;
     sessionConflict?: boolean;
+    sessionConflictDevice?: string;
+    currentSessionDevice?: string;
     invalidated?: boolean;
     lastSessionCheck?: number;
     keepLoggedIn?: boolean;

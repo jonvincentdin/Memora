@@ -11,6 +11,8 @@ describe("lesson PDF export", () => {
     const pages = (document.internal as unknown as { pages: string[][] }).pages.slice(1);
 
     expect(pages.length).toBeGreaterThan(1);
+    expect(pages[0].join("\n")).toContain("Memoria");
+    expect(pages[0].join("\n")).toContain("Turn scattered notes into structured knowledge.");
     for (const page of pages) {
       const content = page.join("\n");
       expect(content).toContain(" Tj");

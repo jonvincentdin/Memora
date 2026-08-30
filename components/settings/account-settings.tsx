@@ -22,7 +22,11 @@ export function AccountSettings({ initial }: { initial: { name: string; email: s
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(data?.error ?? "Couldn't update your account.");
       setCurrentPassword(""); setNewPassword("");
-      setMessage(data.requiresVerification ? "Saved. Check your new email address for a verification link." : "Account updated.");
+      if (data.requiresVerification) {
+        window.location.assign(`/verify-email?sent=1&email=${encodeURIComponent(data.user.email)}`);
+        return;
+      }
+      setMessage("Account updated.");
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Couldn't reach the server."); }
     finally { setBusy(null); }
   }

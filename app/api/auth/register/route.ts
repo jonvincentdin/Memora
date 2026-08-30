@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validation/auth";
 import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 import { withApiErrorHandling } from "@/lib/api/handler";
-import { issueAccountToken } from "@/lib/auth/account-tokens";
-import { appUrl, emailDeliveryConfigured, sendTransactionalEmail } from "@/lib/email";
+import { issueAccountCode } from "@/lib/auth/account-tokens";
+import { emailDeliveryConfigured, sendTransactionalEmail } from "@/lib/email";
 
 export const POST = withApiErrorHandling(async (request: Request) => {
   const ip = getClientIp(request.headers);
@@ -47,13 +47,12 @@ export const POST = withApiErrorHandling(async (request: Request) => {
   });
 
   if (requiresVerification) {
-    const { token } = await issueAccountToken(user.id, "EMAIL_VERIFICATION", 24 * 60);
-    const verifyUrl = appUrl(`/verify-email?token=${encodeURIComponent(token)}`);
+    const { code } = await issueAccountCode(user.id, "EMAIL_VERIFICATION", 10);
     await sendTransactionalEmail({
       to: user.email,
-      subject: "Verify your Memoria email",
-      text: `Verify your email: ${verifyUrl}\n\nThis link expires in 24 hours.`,
-      html: `<p>Hello ${escapeHtml(user.name)},</p><p><a href="${verifyUrl}">Verify your Memoria email</a>. This link expires in 24 hours.</p>`,
+      subject: `${code} is your Memoria verification code`,
+      text: `Your Memoria verification code is ${code}.\n\nThis code expires in 10 minutes.`,
+      html: `<p>Hello ${escapeHtml(user.name)},</p><p>Your Memoria verification code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:8px">${code}</p><p>This code expires in 10 minutes.</p>`,
     });
   }
 
