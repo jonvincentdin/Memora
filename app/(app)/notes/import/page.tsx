@@ -242,19 +242,19 @@ export default function ImportNotePage() {
       <div className="mt-6 flex gap-1 rounded-lg border border-line bg-surface p-1">
         <button
           onClick={() => setTab("file")}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "file" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "file" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Upload className="mr-1.5 inline h-4 w-4" /> Upload File
         </button>
         <button
           onClick={() => setTab("link")}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "link" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "link" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Link2 className="mr-1.5 inline h-4 w-4" /> Import Link
         </button>
         <button
           onClick={() => { setTab("cloud"); if (resources.length === 0) void loadCloudResources(cloudProvider); }}
-          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "cloud" ? "bg-ink text-white" : "text-ink-soft")}
+          className={cn("flex-1 rounded-md py-2 text-sm font-medium", tab === "cloud" ? "bg-action text-action-foreground" : "text-ink-soft")}
         >
           <Cloud className="mr-1.5 inline h-4 w-4" /> Connected Apps
         </button>

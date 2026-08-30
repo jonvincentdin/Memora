@@ -28,7 +28,7 @@ export function Hero() {
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/register"
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-ink px-6 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/90"
+              className="inline-flex h-12 items-center gap-2 rounded-lg bg-action px-6 text-sm font-medium text-action-foreground transition-transform hover:-translate-y-0.5 hover:bg-action/90"
             >
               Get started <ArrowRight className="h-4 w-4" />
             </Link>
@@ -51,7 +51,7 @@ export function Hero() {
               className={`card absolute left-1/2 flex w-64 -translate-x-1/2 items-center gap-3 px-5 py-4 ${item.rotate} ${item.tint}`}
               style={{ top: `${i * 78}px`, zIndex: i }}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-action text-action-foreground">
                 <item.icon className="h-4 w-4" />
               </div>
               <div>

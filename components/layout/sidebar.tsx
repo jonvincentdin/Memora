@@ -35,7 +35,7 @@ export function Sidebar() {
               href={link.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active ? "bg-ink text-white" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
+                active ? "bg-action text-action-foreground" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
               )}
             >
               <link.icon className="h-4 w-4" />

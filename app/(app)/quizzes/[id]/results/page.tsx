@@ -52,7 +52,7 @@ export default async function QuizResultsPage(
         </p>
         <Link
           href={`/quizzes/${quiz.id}/play`}
-          className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-ink/90"
+          className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-action px-4 text-sm font-medium text-action-foreground hover:bg-action/90"
         >
           <RotateCcw className="h-4 w-4" /> Retake
         </Link>

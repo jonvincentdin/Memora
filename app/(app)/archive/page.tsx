@@ -36,7 +36,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
       <p className="mt-1 text-sm text-ink-soft">Archived notes, reviewers, and quizzes in one place.</p>
     </div>
     <nav className="flex flex-wrap gap-2" aria-label="Filter archived resources">
-      {filters.map(({ value, label }) => <Link key={value} href={value === "all" ? "/archive" : `/archive?type=${value}`} className={cn("rounded-lg border px-3 py-1.5 text-sm font-medium", filter === value ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink-soft hover:text-ink")}>{label}</Link>)}
+      {filters.map(({ value, label }) => <Link key={value} href={value === "all" ? "/archive" : `/archive?type=${value}`} className={cn("rounded-lg border px-3 py-1.5 text-sm font-medium", filter === value ? "border-action bg-action text-action-foreground" : "border-line bg-surface text-ink-soft hover:text-ink")}>{label}</Link>)}
     </nav>
     {rows.length === 0 ? <EmptyState icon={Archive} title="Nothing archived" description="Items you archive will appear here and can be restored at any time." /> : <div className="space-y-3">
       {rows.map((row) => <article key={`${row.type}-${row.id}`} className="card flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center">

@@ -117,7 +117,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
         <ThemeToggle className="hidden sm:inline-flex" />
         <Link
           href="/notes/import"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-ink px-2.5 text-sm font-medium text-white hover:bg-ink/90 sm:px-3.5"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-action px-2.5 text-sm font-medium text-action-foreground hover:bg-action/90 sm:px-3.5"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Create</span>
@@ -131,7 +131,7 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-sm font-medium text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-action text-sm font-medium text-action-foreground"
             aria-label="Account menu"
           >
             {userName.charAt(0).toUpperCase()}

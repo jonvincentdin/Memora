@@ -88,7 +88,7 @@ function Block({ block }: { block: Block }) {
         </div>
       );
     case "code":
-      return <pre className="overflow-x-auto rounded-lg bg-ink p-4 text-xs text-white"><code>{String(block.code)}</code></pre>;
+      return <pre className="overflow-x-auto rounded-lg bg-[#1B1F3B] p-4 text-xs text-white"><code>{String(block.code)}</code></pre>;
     default:
       return null;
   }

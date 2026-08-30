@@ -183,7 +183,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
 
       <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
         {["Select source", "Configure", "Generate & copy", "Import result"].map((label, i) => (
-          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-ink text-white" : "bg-ink/5")}>
+          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-action text-action-foreground" : "bg-ink/5")}>
             {i + 1}. {label}
           </span>
         ))}
@@ -240,7 +240,7 @@ export function QuizWizard({ notes, reviewers, defaultReviewerId, defaults, init
                 <button
                   key={m.value}
                   onClick={() => setMode(m.value)}
-                  className={cn("rounded-lg border px-3 py-2 text-sm", mode === m.value ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5")}
+                  className={cn("rounded-lg border px-3 py-2 text-sm", mode === m.value ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5")}
                 >
                   {m.label}
                 </button>

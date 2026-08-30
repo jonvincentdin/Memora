@@ -180,7 +180,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
 
       {creationPath && <div className="mb-6 flex flex-wrap gap-2 text-xs font-medium text-ink-faint">
         {["Select notes", "Choose style", "Generate & copy", "Paste result"].map((label, i) => (
-          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-ink text-white" : "bg-ink/5")}>
+          <span key={label} className={cn("rounded-full px-2.5 py-1", step === i + 1 ? "bg-action text-action-foreground" : "bg-ink/5")}>
             {i + 1}. {label}
           </span>
         ))}
@@ -218,7 +218,7 @@ export function ReviewerWizard({ notes, defaultNoteId, initiallyOpen = false }: 
                 onClick={() => setStyle(s.value)}
                 className={cn(
                   "rounded-lg border px-3 py-2 text-sm",
-                  style === s.value ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5"
+                  style === s.value ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5"
                 )}
               >
                 {s.label}

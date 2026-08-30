@@ -209,7 +209,7 @@ export function OnboardingFlow({ initialName, email, configuredProviders }: Onbo
                   <Label>Theme</Label>
                   <div className="mt-2 flex gap-2">
                     {(["LIGHT", "DARK", "SYSTEM"] as Appearance[]).map((value) => (
-                      <button key={value} type="button" onClick={() => setTheme(value)} className={cn("rounded-lg border px-3 py-2 text-sm", theme === value ? "border-ink bg-ink text-white" : "border-line text-ink-soft")}>
+                      <button key={value} type="button" onClick={() => setTheme(value)} className={cn("rounded-lg border px-3 py-2 text-sm", theme === value ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft")}>
                         {value.toLowerCase()}
                       </button>
                     ))}

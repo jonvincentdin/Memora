@@ -66,7 +66,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
               onClick={() => save({ appearance: a })}
               className={cn(
                 "rounded-lg border px-4 py-2 text-sm capitalize",
-                theme === a ? "border-ink bg-ink text-white" : "border-line text-ink-soft hover:bg-ink/5"
+                theme === a ? "border-action bg-action text-action-foreground" : "border-line text-ink-soft hover:bg-ink/5"
               )}
             >
               {a.toLowerCase()}

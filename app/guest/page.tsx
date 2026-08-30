@@ -36,7 +36,7 @@ export default function GuestPage() {
           <button
             key={activity.key}
             onClick={() => setTab(activity.key)}
-            className={cn("rounded-md py-2 text-sm font-medium", tab === activity.key ? "bg-ink text-white" : "text-ink-soft")}
+            className={cn("rounded-md py-2 text-sm font-medium", tab === activity.key ? "bg-action text-action-foreground" : "text-ink-soft")}
           >
             {activity.label}
           </button>

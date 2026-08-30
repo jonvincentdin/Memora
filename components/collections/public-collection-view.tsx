@@ -64,7 +64,7 @@ export function PublicCollectionView({ collection }: { collection: PublicCollect
                   onClick={() => setActive(s.key)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium",
-                    active === s.key ? "bg-ink text-white" : "text-ink-soft hover:bg-ink/5"
+                    active === s.key ? "bg-action text-action-foreground" : "text-ink-soft hover:bg-ink/5"
                   )}
                 >
                   <s.icon className="h-3.5 w-3.5" /> {s.label} ({s.count})

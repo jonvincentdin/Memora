@@ -165,8 +165,8 @@ export function GuestReviewerFlow({ initialView = "reviewer" }: { initialView?: 
                 <Input id="guest-reviewer-title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
               <div className="flex gap-1 rounded-lg border border-line bg-surface p-1">
-                <button type="button" onClick={() => setResultView("reviewer")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "reviewer" ? "bg-ink text-white" : "text-ink-soft")}>Reviewer</button>
-                <button type="button" onClick={() => setResultView("flashcards")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "flashcards" ? "bg-ink text-white" : "text-ink-soft")}>Flashcards ({flashcards.length})</button>
+                <button type="button" onClick={() => setResultView("reviewer")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "reviewer" ? "bg-action text-action-foreground" : "text-ink-soft")}>Reviewer</button>
+                <button type="button" onClick={() => setResultView("flashcards")} className={cn("flex-1 rounded-md py-2 text-sm font-medium", resultView === "flashcards" ? "bg-action text-action-foreground" : "text-ink-soft")}>Flashcards ({flashcards.length})</button>
               </div>
               <div className="max-h-[32rem] overflow-y-auto rounded-lg border border-line bg-surface p-5">
                 {resultView === "reviewer" ? <MarkdownRenderer content={cleanedMarkdown} /> : <GuestFlashcards cards={flashcards} />}
