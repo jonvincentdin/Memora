@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight } from "lucide-react";
+import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, Star, ArrowRight, Flame } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationMenu } from "@/components/notifications/notification-menu";
 
-export function Topbar({ userName, unreadNotifications }: { userName: string; unreadNotifications: number }) {
+export function Topbar({ userName, unreadNotifications, studyStreak }: { userName: string; unreadNotifications: number; studyStreak: number }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -122,6 +122,16 @@ export function Topbar({ userName, unreadNotifications }: { userName: string; un
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Create</span>
+        </Link>
+
+        <Link
+          href="/study"
+          aria-label={`${studyStreak}-day study streak`}
+          title={`${studyStreak}-day study streak`}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-2.5 text-sm font-semibold text-accent-dark transition-colors hover:border-accent hover:bg-accent/25"
+        >
+          <Flame className="h-4 w-4 fill-accent text-accent-dark" />
+          <span>{studyStreak}</span>
         </Link>
 
         <NotificationMenu initialUnreadCount={unreadNotifications} />

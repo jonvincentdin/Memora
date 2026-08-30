@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/utils";
+import { calculateStudyStreak } from "@/lib/study-streak";
 
 export default async function StudyHubPage() {
   const user = await requireUser();
@@ -24,13 +25,7 @@ export default async function StudyHubPage() {
     prisma.flashcard.count({ where: { ownerId: user.id, OR: [{ progress: { none: { userId: user.id } } }, { progress: { some: { userId: user.id, dueAt: { lte: new Date() } } } }] } }),
     prisma.flashcardReview.findMany({ where: { userId: user.id, reviewedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } }, select: { reviewedAt: true }, orderBy: { reviewedAt: "desc" } }),
   ]);
-  const reviewDays = new Set(recentReviews.map((review) => review.reviewedAt.toISOString().slice(0, 10)));
-  let streak = 0;
-  for (let offset = 0; offset < 30; offset++) {
-    const day = new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
-    if (reviewDays.has(day)) streak += 1;
-    else if (offset > 0) break;
-  }
+  const streak = calculateStudyStreak(recentReviews.map((review) => review.reviewedAt));
 
   return (
     <div className="mx-auto max-w-5xl space-y-10">
