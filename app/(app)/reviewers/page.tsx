@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { ReviewerWizardLauncher } from "@/components/reviewers/reviewer-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
+import { TagList } from "@/components/library/tag-list";
 
 export default async function ReviewersPage(props: { searchParams: Promise<{ create?: string; fromNote?: string; source?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await requireUser();
   const page = Math.max(1, Number(searchParams.page) || 1);
   const [reviewers, notes] = await Promise.all([
-    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, skip: (page - 1) * 24, take: 24, select: { id: true, title: true, description: true, style: true, updatedAt: true, isFavorite: true } }),
+    prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, skip: (page - 1) * 24, take: 24, select: { id: true, title: true, description: true, style: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } } }),
     prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
   ]);
 
@@ -49,6 +50,7 @@ export default async function ReviewersPage(props: { searchParams: Promise<{ cre
               <p className="font-display text-base text-ink line-clamp-1">{r.title}</p>
               {r.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
               {r.description && <p className="mt-1 text-sm text-ink-soft line-clamp-2">{r.description}</p>}
+              <TagList tags={r.tags.map(({ tag }) => tag)} />
             </Link>
           ))}
         </div>

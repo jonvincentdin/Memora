@@ -7,6 +7,7 @@ import { Search, Plus, LogOut, User as UserIcon, FileText, Layers, ListChecks, S
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationMenu } from "@/components/notifications/notification-menu";
+import { TagList } from "@/components/library/tag-list";
 
 export function Topbar({ userName, unreadNotifications, studyStreak }: { userName: string; unreadNotifications: number; studyStreak: number }) {
   const router = useRouter();
@@ -104,7 +105,7 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
               const Icon = suggestion.type === "note" ? FileText : suggestion.type === "reviewer" ? Layers : ListChecks;
               return <button key={`${suggestion.type}-${suggestion.id}`} type="button" role="option" aria-selected={selectedIndex === index} onMouseEnter={() => setSelectedIndex(index)} onClick={() => openSuggestion(suggestion)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left ${selectedIndex === index ? "bg-ink/5" : "hover:bg-ink/[0.03]"}`}>
                 <Icon className="h-4 w-4 shrink-0 text-accent-dark" />
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink">{suggestion.title}</span><span className="block text-xs capitalize text-ink-faint">{suggestion.type}</span></span>
+                <div className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink">{suggestion.title}</span><span className="block text-xs capitalize text-ink-faint">{suggestion.type}</span><TagList tags={suggestion.tags.map(({ tag }) => tag)} className="mt-1" /></div>
                 {suggestion.isFavorite && <Star className="h-3.5 w-3.5 fill-accent text-accent-dark" aria-label="Favorite" />}
               </button>;
             })}
@@ -170,6 +171,6 @@ export function Topbar({ userName, unreadNotifications, studyStreak }: { userNam
   );
 }
 
-interface SearchItem { id: string; title: string; isFavorite?: boolean }
+interface SearchItem { id: string; title: string; isFavorite?: boolean; tags: Array<{ tag: { id: string; name: string } }> }
 interface SearchResponse { notes: SearchItem[]; reviewers: SearchItem[]; quizzes: SearchItem[] }
 interface SearchSuggestion extends SearchItem { type: "note" | "reviewer" | "quiz"; href: string }
