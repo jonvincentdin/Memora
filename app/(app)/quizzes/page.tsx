@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { QuizWizardLauncher } from "@/components/quizzes/quiz-wizard-launcher";
 import { formatRelativeTime } from "@/lib/utils";
 import { LibraryNavigation } from "@/components/library/library-navigation";
+import { TagList } from "@/components/library/tag-list";
 
 export default async function QuizzesPage(props: { searchParams: Promise<{ create?: string; fromNote?: string; fromReviewer?: string; source?: string; page?: string }> }) {
   const searchParams = await props.searchParams;
@@ -18,7 +19,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
       orderBy: { updatedAt: "desc" },
       skip: (page - 1) * 24,
       take: 24,
-      select: { id: true, title: true, mode: true, questions: true, updatedAt: true, isFavorite: true },
+      select: { id: true, title: true, mode: true, questions: true, updatedAt: true, isFavorite: true, tags: { select: { tag: { select: { id: true, name: true } } } } },
     }),
     prisma.note.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
     prisma.reviewer.findMany({ where: { ownerId: user.id, archivedAt: null }, orderBy: { updatedAt: "desc" }, select: { id: true, title: true } }),
@@ -59,6 +60,7 @@ export default async function QuizzesPage(props: { searchParams: Promise<{ creat
                 <p className="font-display text-base text-ink line-clamp-1">{q.title}</p>
                 {q.isFavorite && <span className="text-xs text-accent-dark">★ Favorite</span>}
                 <p className="mt-1 text-sm text-ink-soft">{questionCount} question{questionCount !== 1 ? "s" : ""}</p>
+                <TagList tags={q.tags.map(({ tag }) => tag)} />
               </Link>
             );
           })}

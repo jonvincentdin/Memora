@@ -14,7 +14,9 @@ import { createResourceRevision } from "@/lib/revisions";
  * so there is exactly one place that knows the column is compressed.
  */
 export type Note = Omit<DbNote, "content"> & { content: string };
-export type NoteSummary = Omit<DbNote, "content">;
+export type NoteSummary = Omit<DbNote, "content"> & {
+  tags: Array<{ tag: { id: string; name: string } }>;
+};
 
 function hydrate(note: DbNote): Note {
   return { ...note, content: decompressText(note.content) };
@@ -114,6 +116,7 @@ export async function findNoteSummariesByOwner(ownerId: string, options: { archi
       isFavorite: true,
       createdAt: true,
       updatedAt: true,
+      tags: { select: { tag: { select: { id: true, name: true } } } },
     },
   });
 }
