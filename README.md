@@ -123,7 +123,7 @@ Every API route re-derives access via `lib/permissions/index.ts::getAccessLevel`
 
 ## Shipped feature status
 
-**Implemented:** auth and session-conflict handling; skippable onboarding; Memories CRUD; validated local and per-user connected-app imports; OCR warnings for image-heavy sources; lossless Memoria round trips; a unified Archive; full-copy duplication with tags/source links/collection placement; Markdown editing; exactly two reviewer creation paths; reviewer/quiz generation; 7 question types; Review and Exam modes; Pomodoro/timers and auto-grading; results and spaced-repetition flashcards; guest mode; direct sharing; public/private Collections; collection feedback threads and moderation hooks; notifications with unread indicator and contextual click-through; PDF/Word/JSON/Markdown/text exports; global search; dark/light/system themes; and compressed at-rest content.
+**Implemented:** auth and session-conflict handling; skippable onboarding; Memories CRUD; validated local and per-user connected-app imports; OCR warnings for image-heavy sources; lossless Memoria round trips; a unified Archive; full-copy duplication with tags/source links/collection placement; Markdown editing; exactly two reviewer creation paths; reviewer/quiz generation; 7 question types; Review and Exam modes; Pomodoro/timers and auto-grading; results and spaced-repetition flashcards; guest mode; revocable public Memory links and editor sharing with user search; public/private Collections; collection feedback threads and moderation hooks; notifications with unread indicator and contextual click-through; PDF/Word/JSON/Markdown/text exports; global search; dark/light/system themes; and compressed at-rest content.
 
 ### Optional connection setup
 

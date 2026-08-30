@@ -31,6 +31,7 @@ model User {
   quizAttempts          QuizAttempt[]
   sharesGiven           ResourceShare[]         @relation("SharesGivenByOwner")
   sharesGranted         ResourceShare[]         @relation("SharesGrantedToUser")
+  publicLinksGiven      PublicResourceLink[]
   settings              UserSettings?
   collections           ShareCollection[]
   integrations          IntegrationConnection[]
@@ -514,6 +515,24 @@ model ResourceInvite {
   @@unique([resourceId, resourceType, email])
   @@index([email, expiresAt])
   @@map("resource_invites")
+}
+
+// A revocable, unguessable link for viewing one resource without a Memoria
+// account. Public pages remain read-only and verify that the link owner still
+// owns the referenced resource before returning any content.
+model PublicResourceLink {
+  id           String       @id @default(cuid())
+  resourceId   String
+  resourceType ResourceType
+  ownerId      String
+  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  token        String       @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([resourceId, resourceType])
+  @@index([ownerId])
+  @@map("public_resource_links")
 }
 
 // ---------------------------------------------------------------------------
